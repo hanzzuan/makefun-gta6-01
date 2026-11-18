@@ -3,17 +3,114 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Block Dodger</title>
+<link rel="icon" href="data:,">
+<title>SOLMAR — Sunset Streets</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #11141b; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0e1a;
+    font-family: "Trebuchet MS", "Segoe UI", Verdana, sans-serif; }
   #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  /* Read aloud, never shown: the status line screen readers announce. */
-  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  #hud { position: fixed; inset: 0; pointer-events: none; color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,.8); user-select: none; }
+  #topbar { position: absolute; top: 14px; left: 16px; right: 16px;
+    display: flex; justify-content: space-between; align-items: flex-start; }
+  #stars { font-size: 30px; letter-spacing: 4px; color: #ffd23e; }
+  #stars .off { color: rgba(255,255,255,.28); }
+  #cash { font-size: 26px; font-weight: 800; color: #7dff8a; }
+  #cash small { font-size: 13px; color: #cfe8d2; font-weight: 400; display: block; text-align: right; }
+  #healthwrap { position: absolute; top: 64px; left: 16px; width: 240px; }
+  #healthwrap .label { font-size: 12px; letter-spacing: 2px; opacity: .85; }
+  #healthbar { height: 12px; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.5);
+    border-radius: 6px; overflow: hidden; margin-top: 3px; }
+  #healthfill { height: 100%; width: 100%; background: linear-gradient(90deg, #37d67a, #9be15d); }
+  #staminabar { height: 8px; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.4);
+    border-radius: 4px; overflow: hidden; margin-top: 3px; }
+  #staminafill { height: 100%; width: 100%; background: linear-gradient(90deg, #4a8cff, #7ab8ff); }
+  #clock { position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    font-size: 15px; font-weight: 700; letter-spacing: 2px; color: #ffd23e;
+    background: rgba(0,0,0,.45); padding: 5px 16px; border-radius: 14px; white-space: nowrap; }
+  #timer { position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
+    font-size: 20px; font-weight: 900; letter-spacing: 2px; color: #ff5c5c;
+    background: rgba(0,0,0,.45); padding: 3px 14px; border-radius: 12px; white-space: nowrap; }
+  #racebar { position: absolute; top: 92px; left: 50%; transform: translateX(-50%);
+    font-size: 17px; font-weight: 800; letter-spacing: 1px; color: #7dff8a;
+    background: rgba(0,0,0,.45); padding: 4px 14px; border-radius: 12px; white-space: nowrap;
+    display: none; }
+  #objective { position: absolute; top: 64px; right: 16px; width: 340px; text-align: right; }
+  #objective .title { font-size: 13px; letter-spacing: 2px; color: #ffd23e; font-weight: 800; }
+  #objective .text { font-size: 16px; margin-top: 3px; line-height: 1.35; }
+  #speedo { position: absolute; right: 18px; bottom: 16px; text-align: right; }
+  #speedo .num { font-size: 44px; font-weight: 900; line-height: 1; }
+  #speedo .unit { font-size: 13px; letter-spacing: 2px; opacity: .8; }
+  #speedo .gear { font-size: 15px; color: #ffd23e; font-weight: 700; }
+  #hint { position: absolute; left: 16px; bottom: 16px; font-size: 14px; line-height: 1.6; opacity: .9; }
+  #hint b { color: #ffd23e; }
+  #crosshair { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px;
+    margin: -11px 0 0 -11px; display: none; }
+  #crosshair:before, #crosshair:after { content: ""; position: absolute; background: #fff;
+    box-shadow: 0 0 3px #000; }
+  #crosshair:before { left: 10px; top: 0; width: 2px; height: 22px; }
+  #crosshair:after { left: 0; top: 10px; width: 22px; height: 2px; }
+  #minimap { position: absolute; left: 16px; bottom: 86px; width: 190px; height: 190px;
+    border: 2px solid rgba(255,255,255,.65); border-radius: 50%;
+    background: rgba(8, 12, 30, .55); box-shadow: 0 0 0 4px rgba(0,0,0,.35); }
+  #toast { position: absolute; left: 50%; top: 22%; transform: translateX(-50%);
+    font-size: 30px; font-weight: 900; letter-spacing: 1px; color: #ffd23e;
+    opacity: 0; transition: opacity .3s; text-align: center; }
+  #toast small { display: block; font-size: 16px; color: #fff; font-weight: 400; letter-spacing: 0; }
+  #overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, rgba(20,16,60,.55), rgba(5,4,20,.92));
+    color: #fff; z-index: 10; }
+  #overlay .panel { text-align: center; max-width: 640px; padding: 24px; }
+  #overlay h1 { font-size: 64px; margin: 0; letter-spacing: 6px; color: #ffd23e;
+    text-shadow: 0 4px 0 #c2432b, 0 8px 24px rgba(0,0,0,.6); }
+  #overlay h2 { font-size: 20px; margin: 2px 0 18px; letter-spacing: 8px; color: #ff8a5c; font-weight: 400; }
+  #overlay p { font-size: 16px; line-height: 1.55; color: #e8e4ff; }
+  #overlay .keys { font-size: 14px; line-height: 1.9; color: #c9c4ef; margin: 14px 0 20px; }
+  #overlay .keys b { color: #ffd23e; }
+  #overlay button { pointer-events: auto; font: inherit; font-size: 20px; font-weight: 800;
+    letter-spacing: 2px; color: #1a1030; background: #ffd23e; border: none; border-radius: 8px;
+    padding: 14px 42px; cursor: pointer; box-shadow: 0 6px 0 #c2432b; }
+  #overlay button:hover { background: #ffe27a; }
+  #overlay .save { margin-top: 16px; font-size: 13px; color: #9a94c8; }
+  #status { position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap; }
 </style>
 </head>
 <body>
-<canvas id="game" aria-label="Block Dodger: move the paddle left and right to dodge falling blocks and catch coins"></canvas>
+<canvas id="game" aria-label="SOLMAR Sunset Streets: an open-world crime game in the coastal city of Solmar"></canvas>
+<div id="hud">
+  <div id="topbar">
+    <div id="stars" aria-label="Wanted level"></div>
+    <div id="cash">$0<small id="cashsub">SOLMAR CITY</small></div>
+  </div>
+  <div id="healthwrap">
+    <div class="label">HEALTH</div>
+    <div id="healthbar"><div id="healthfill"></div></div>
+    <div class="label" style="margin-top:5px">STAMINA</div>
+    <div id="staminabar"><div id="staminafill"></div></div>
+  </div>
+  <div id="clock">6:42 PM · CLEAR</div>
+  <div id="timer"></div>
+  <div id="racebar"></div>
+  <div id="objective">
+    <div class="title" id="objtitle">SOLMAR</div>
+    <div class="text" id="objtext">Welcome to Solmar.</div>
+  </div>
+  <canvas id="minimap" width="190" height="190"></canvas>
+  <div id="speedo">
+    <div class="num" id="speednum">0</div>
+    <div class="unit">KM/H</div>
+    <div class="gear" id="gear">ON FOOT</div>
+  </div>
+  <div id="hint"></div>
+  <div id="crosshair"></div>
+  <div id="toast"></div>
+</div>
+<div id="overlay"></div>
 <p id="status" role="status" aria-live="polite"></p>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/three.module.min.js" } }
+</script>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>

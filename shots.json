@@ -1,5 +1,1 @@
-[
-  { "name": "1-start.jpg", "query": "?shot=start&seed=1" },
-  { "name": "2-play.jpg", "query": "?shot=play&seed=1" },
-  { "name": "3-end.jpg", "query": "?shot=end&seed=1" }
-]
+[{"label":"Five-star chase in the rain: the police helicopter overhead, roadblock ahead","name":"1-chase.jpg","query":"?shot=chase"},{"label":"Night cab shift in South Solmar, past the airport terminal","name":"2-drive.jpg","query":"?shot=drive"},{"label":"On foot at the Palmera Resort in the South district at golden hour","name":"3-city.jpg","query":"?shot=city"},{"label":"Southern Comfort: Mara faces Venn's resort guards by the pool","name":"4-mission.jpg","query":"?shot=mission"}]

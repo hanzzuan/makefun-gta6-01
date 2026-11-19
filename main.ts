@@ -11,7 +11,7 @@
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
 //   mkdir -p /tmp/gta6-01-out && MAKEFUN_OUTPUT_DIR=/tmp/gta6-01-out node main.ts
 
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-game.ts';
@@ -20,6 +20,21 @@ import { buildDossier } from './vendor/makefun-game.ts';
 const repoRoot = fileURLToPath(new URL('.', import.meta.url));
 // The grader writes to /output; a local run overrides it with MAKEFUN_OUTPUT_DIR.
 const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+
+// The hand-in must be real files, not links out of the repo: a symlink
+// under game/ could smuggle in content the grader never sees in the
+// repository, so refuse to build one.
+function assertNoSymlinks(dir) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isSymbolicLink() || !entry.isDirectory() && lstatSync(path).isSymbolicLink()) {
+      throw new Error('symlink found in hand-in: ' + path);
+    }
+    if (entry.isDirectory()) assertNoSymlinks(path);
+  }
+}
+assertNoSymlinks(join(repoRoot, 'game'));
+if (existsSync(join(repoRoot, 'screenshots'))) assertNoSymlinks(join(repoRoot, 'screenshots'));
 
 mkdirSync(outputDir, { recursive: true });
 cpSync(join(repoRoot, 'game'), join(outputDir, 'game'), { recursive: true });
@@ -69,10 +84,66 @@ for (const shotFile of readdirSync(shotDir).filter((f) => !f.startsWith('.'))) {
     throw new Error('screenshot ' + shotFile + ' is ' + bytes.length + ' bytes, over the 256 KiB cap');
   }
 }
-// Count the game files so the run reports the size of the hand-in.
+// Every screenshot shots.json names must exist on disk: a missing
+// file would hand the judge an empty frame, so refuse the hand-in
+// instead of submitting a dossier that points at nothing.
+const shotList = JSON.parse(readFileSync(join(repoRoot, 'shots.json'), 'utf8'));
+for (const shot of shotList) {
+  if (!existsSync(join(shotDir, shot.name))) {
+    throw new Error('shots.json names ' + shot.name + ' but it is missing from screenshots/');
+  }
+}
+// No orphan screenshots: every file in screenshots/ must be named in
+// shots.json, or the judge would see a frame the dossier never lists.
+const namedShots = new Set(shotList.map((s) => s.name));
+for (const shotFile of readdirSync(shotDir).filter((f) => !f.startsWith('.'))) {
+  if (!namedShots.has(shotFile)) {
+    throw new Error('screenshot ' + shotFile + ' is on disk but not named in shots.json');
+  }
+}
+// Count the game files so the run reports the size of the hand-in —
+// and list the five largest, so a runaway asset shows up in the log
+// before the grader ever sees it, not after. The total bytes are
+// reported too: the gate caps game/ at 48 MiB, and the log should say
+// how close the hand-in runs to it.
 let gameFiles = 0;
-for (const entry of readdirSync(join(outputDir, 'game'), { recursive: true })) gameFiles += 1;
+let gameBytes = 0;
+const gameSizes = [];
+function walkSizes(dir) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) walkSizes(path);
+    else {
+      gameFiles += 1;
+      const bytes = lstatSync(path).size;
+      gameBytes += bytes;
+      gameSizes.push({ path: path.slice(join(outputDir, 'game').length + 1), bytes });
+    }
+  }
+}
+walkSizes(join(outputDir, 'game'));
+gameSizes.sort((a, b) => b.bytes - a.bytes);
+const biggest = gameSizes.slice(0, 5).map((f) => f.path + ' ' + f.bytes + 'B').join(', ');
+// Every shot in shots.json needs a label: a frame the dossier cannot
+// describe tells the judge nothing, so refuse a blank one.
+for (const shot of shotList) {
+  if (typeof shot.label !== 'string' || shot.label.trim().length === 0) {
+    throw new Error('shots.json entry ' + shot.name + ' has no label');
+  }
+}
+// The dossier promises four screenshots — refuse a run that produced
+// fewer, so a broken shot never ships silently.
+const shotFiles = readdirSync(join(outputDir, 'screenshots')).filter((f) => f.endsWith('.jpg') || f.endsWith('.png'));
+if (shotFiles.length !== 4) {
+  throw new Error('expected 4 screenshots, found ' + shotFiles.length);
+}
 console.log(
   'SOLMAR dossier: ' + dossierBytes + ' bytes, ' + shotCount +
-  ' screenshots, ' + gameFiles + ' game entries, output in ' + outputDir,
+  ' screenshots, ' + gameFiles + ' game entries, ' + gameBytes + ' game bytes, output in ' + outputDir,
 );
+console.log('largest game files: ' + biggest);
+// How many source modules the entry is built from — the dossier lists
+// the game entries, but the count of game/src/*.js files is the quick
+// read on how the code is split up.
+const srcCount = gameSizes.filter((f) => f.path.startsWith('src/') && f.path.endsWith('.js')).length;
+console.log('source modules: ' + srcCount + ' game/src/*.js files');

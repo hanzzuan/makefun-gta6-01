@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="theme-color" content="#0b0b14">
+<noscript><p style="color:#fff;background:#0b0b14;padding:24px;font-family:sans-serif">SOLMAR — Sunset Streets needs JavaScript to run. Please enable it and reload.</p></noscript>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="SOLMAR — Sunset Streets: an original open-world crime game. Forty story missions, driving, boats, a wanted level, a nightclub to own, a taxi rank that takes you anywhere in town, six rare cars to collect, a jobs board, twelve spray walls to paint, and a bounty board with ten fugitives to hunt.">
 <link rel="icon" href="data:,">
 <title>SOLMAR — Sunset Streets</title>
 <style>
@@ -35,6 +38,12 @@
     font-size: 17px; font-weight: 800; letter-spacing: 1px; color: #7dff8a;
     background: rgba(0,0,0,.45); padding: 4px 14px; border-radius: 12px; white-space: nowrap;
     display: none; }
+  #radio { position: absolute; top: 130px; left: 50%; transform: translateX(-50%);
+    font-size: 14px; font-weight: 700; letter-spacing: 1px; color: #7ab8ff;
+    background: rgba(0,0,0,.45); padding: 3px 14px; border-radius: 12px; white-space: nowrap; }
+  #crewline { position: absolute; top: 162px; left: 50%; transform: translateX(-50%);
+    font-size: 13px; font-weight: 700; letter-spacing: 1px; color: #ffd23e;
+    background: rgba(0,0,0,.45); padding: 3px 14px; border-radius: 12px; white-space: nowrap; }
   #objective { position: absolute; top: 64px; right: 16px; width: 340px; text-align: right; }
   #objective .title { font-size: 13px; letter-spacing: 2px; color: #ffd23e; font-weight: 800; }
   #objective .text { font-size: 16px; margin-top: 3px; line-height: 1.35; }
@@ -91,6 +100,8 @@
   </div>
   <div id="clock">6:42 PM · CLEAR</div>
   <div id="timer"></div>
+  <div id="radio">📻 SUNSET FM 89.1 — golden-hour synth</div>
+  <div id="crewline"></div>
   <div id="racebar"></div>
   <div id="objective">
     <div class="title" id="objtitle">SOLMAR</div>

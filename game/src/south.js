@@ -433,6 +433,9 @@ export function buildSouth(scene, colliders) {
   animated.taxiPlane = taxiPlane;
 
   // Fuel truck and luggage carts by the terminal, for the runway job.
+  // The truck does not sit still: it loops the apron between the
+  // terminal and the parked jets, and its collider rides with it so the
+  // player cannot walk through the moving truck.
   const fuelTruck = new THREE.Mesh(
     new THREE.BoxGeometry(2.4, 2.2, 6.4),
     new THREE.MeshStandardMaterial({ color: 0xf2c230, roughness: 0.6, metalness: 0.3 }),
@@ -440,7 +443,10 @@ export function buildSouth(scene, colliders) {
   fuelTruck.position.set(168, 1.4, 232);
   fuelTruck.castShadow = true;
   scene.add(fuelTruck);
-  colliders.push({ minX: 166.8, maxX: 169.2, minZ: 228.8, maxZ: 235.2 });
+  const fuelCollider = { minX: 166.8, maxX: 169.2, minZ: 228.8, maxZ: 235.2 };
+  colliders.push(fuelCollider);
+  animated.fuelTruck = fuelTruck;
+  animated.fuelCollider = fuelCollider;
   for (let i = 0; i < 3; i++) {
     const cart = new THREE.Mesh(
       new THREE.BoxGeometry(2.6, 1.2, 1.6),
@@ -474,6 +480,186 @@ export function buildSouth(scene, colliders) {
       if (animated.windsock) {
         animated.windsock.rotation.z = Math.PI / 2 - 0.35 + Math.sin(time * 0.8) * 0.12;
       }
+      // The fuel truck loops the apron: terminal → jet → jet → terminal,
+      // 80 metres at 2 m/s, its collider riding along so the truck is
+      // solid everywhere it drives.
+      if (animated.fuelTruck && animated.fuelCollider) {
+        const loop = (time * 2) % 80;
+        let fx;
+        let fz;
+        let fHeading;
+        if (loop < 22) {
+          fx = 168 + loop; fz = 232; fHeading = Math.PI / 2;
+        } else if (loop < 40) {
+          fx = 190; fz = 232 + (loop - 22); fHeading = 0;
+        } else if (loop < 62) {
+          fx = 190 - (loop - 40); fz = 250; fHeading = -Math.PI / 2;
+        } else {
+          fx = 168; fz = 250 - (loop - 62); fHeading = Math.PI;
+        }
+        animated.fuelTruck.position.x = fx;
+        animated.fuelTruck.position.z = fz;
+        animated.fuelTruck.rotation.y = fHeading;
+        const along = fHeading === 0 || fHeading === Math.PI;
+        const hx = along ? 1.2 : 3.2;
+        const hz = along ? 3.2 : 1.2;
+        animated.fuelCollider.minX = fx - hx;
+        animated.fuelCollider.maxX = fx + hx;
+        animated.fuelCollider.minZ = fz - hz;
+        animated.fuelCollider.maxZ = fz + hz;
+      }
     },
   };
 }
+
+// The casino's gold sign by the resort door: a glowing box on two
+// posts, so the tables read from the street the way the property
+// signs do. Called once at boot, like the property signs.
+export function buildCasinoSign(scene) {
+  const sign = new THREE.Mesh(
+    new THREE.BoxGeometry(6, 1.6, 0.4),
+    new THREE.MeshStandardMaterial({ color: 0x8a6a1a, emissive: 0xf2c230, emissiveIntensity: 0.7, metalness: 0.5, roughness: 0.4 }),
+  );
+  sign.position.set(-128, 4.2, 224);
+  sign.castShadow = true;
+  scene.add(sign);
+  // A gold glow strip under the sign, so the casino door reads from
+  // the avenue at night — the house wants to be found.
+  const strip = new THREE.Mesh(
+    new THREE.BoxGeometry(6, 0.3, 0.5),
+    new THREE.MeshStandardMaterial({ color: 0x8a6a1a, emissive: 0xf2c230, emissiveIntensity: 0.9, metalness: 0.5, roughness: 0.4 }),
+  );
+  strip.position.set(-128, 3.2, 224);
+  scene.add(strip);
+  for (const px of [-130.5, -125.5]) {
+    const post = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.15, 0.15, 4.2, 6),
+      new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.6 }),
+    );
+    post.position.set(px, 2.1, 224);
+    scene.add(post);
+  }
+}
+
+// The beach buggy hides behind the resort pool house — the rarest
+// car in the south, and the only one that likes the sand.
+export const SOUTH_RARE_SPOT = { x: -170, z: 238, kind: 'buggy', name: 'Beach Buggy' };
+
+// A WANTED billboard on the resort road: the PD's fugitives, posted
+// where the south side can read them — Saint's face is the biggest
+// one on it, and the resort guests pretend not to notice.
+export function buildBountyBillboard(scene) {
+  const billboard = new THREE.Mesh(
+    new THREE.BoxGeometry(5, 3, 0.4),
+    new THREE.MeshStandardMaterial({ color: 0x2a2018, emissive: 0x332211, emissiveIntensity: 0.4, roughness: 0.9 }),
+  );
+  billboard.position.set(-152, 4.5, 238);
+  billboard.castShadow = true;
+  scene.add(billboard);
+  const bar = new THREE.Mesh(
+    new THREE.BoxGeometry(5, 0.5, 0.45),
+    new THREE.MeshBasicMaterial({ color: 0xffd23e }),
+  );
+  bar.position.set(-152, 5.8, 238);
+  scene.add(bar);
+  for (const px of [-154.5, -149.5]) {
+    const post = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.15, 0.15, 4.5, 6),
+      new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.6 }),
+    );
+    post.position.set(px, 2.25, 238);
+    scene.add(post);
+  }
+  return billboard;
+}
+
+// The resort mural: a blank wall beside the pool house where the
+// resort's guests watch the taggers work at sunset — the most
+// photographed wall in Solmar, and the one the casino crowd tips for.
+export function buildResortMural(scene) {
+  const group = new THREE.Group();
+  const wall = new THREE.Mesh(
+    new THREE.BoxGeometry(4.5, 2.6, 0.3),
+    new THREE.MeshStandardMaterial({ color: 0xe8e0d0, roughness: 1 }),
+  );
+  group.add(wall);
+  const frame = new THREE.Mesh(
+    new THREE.BoxGeometry(4.9, 0.35, 0.34),
+    new THREE.MeshBasicMaterial({ color: 0xff5c8a }),
+  );
+  frame.position.set(0, 1.45, 0);
+  group.add(frame);
+  const can = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.09, 0.09, 0.4, 8),
+    new THREE.MeshStandardMaterial({ color: 0xffc300, roughness: 0.4, metalness: 0.5 }),
+  );
+  can.position.set(-2.0, 0.3, 0.25);
+  group.add(can);
+  group.position.set(-138, 1.3, 226);
+  group.rotation.y = Math.PI;
+  scene.add(group);
+  return group;
+}
+
+// The airport mural: a blank wall on the terminal fence where the
+// ground crew paints between flights — the last wall most players
+// find, and the one the tower watches over the runway.
+export function buildAirportMural(scene) {
+  const group = new THREE.Group();
+  const wall = new THREE.Mesh(
+    new THREE.BoxGeometry(4.5, 2.6, 0.3),
+    new THREE.MeshStandardMaterial({ color: 0xc8c8d0, roughness: 1 }),
+  );
+  group.add(wall);
+  const frame = new THREE.Mesh(
+    new THREE.BoxGeometry(4.9, 0.35, 0.34),
+    new THREE.MeshBasicMaterial({ color: 0x3cc8c0 }),
+  );
+  frame.position.set(0, 1.45, 0);
+  group.add(frame);
+  const can = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.09, 0.09, 0.4, 8),
+    new THREE.MeshStandardMaterial({ color: 0xffc300, roughness: 0.4, metalness: 0.5 }),
+  );
+  can.position.set(-2.0, 0.3, 0.25);
+  group.add(can);
+  group.position.set(148, 1.3, 206);
+  group.rotation.y = Math.PI / 2;
+  scene.add(group);
+  return group;
+}
+
+// The beach mural: a blank wall on the boardwalk where the surfers
+// paint between sets — salt in the air, sand on the cans, and the
+// best sunset view of any wall in Solmar.
+export function buildBeachMural(scene) {
+  const group = new THREE.Group();
+  const wall = new THREE.Mesh(
+    new THREE.BoxGeometry(4.5, 2.6, 0.3),
+    new THREE.MeshStandardMaterial({ color: 0xe0d8c8, roughness: 1 }),
+  );
+  group.add(wall);
+  const frame = new THREE.Mesh(
+    new THREE.BoxGeometry(4.9, 0.35, 0.34),
+    new THREE.MeshBasicMaterial({ color: 0xff2e88 }),
+  );
+  frame.position.set(0, 1.45, 0);
+  group.add(frame);
+  const can = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.09, 0.09, 0.4, 8),
+    new THREE.MeshStandardMaterial({ color: 0xffc300, roughness: 0.4, metalness: 0.5 }),
+  );
+  can.position.set(2.0, 0.3, 0.25);
+  group.add(can);
+  group.position.set(-170, 1.3, 234);
+  group.rotation.y = Math.PI;
+  scene.add(group);
+  return group;
+}
+
+// The south beach: the sand strip behind the resort pool, where the
+// buggy hides and the sun sets over the water.
+export const SOUTH_BEACH_SPOTS = [
+  { x: -170, z: 238, name: 'Beach Buggy Hideout' },
+  { x: -150, z: 246, name: 'South Beach' },
+];

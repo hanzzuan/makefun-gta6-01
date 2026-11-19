@@ -1,79 +1,100 @@
-// police.js — Solmar PD: the wanted level and the police cars that answer it.
-// Stealing a car, speeding through a crowd or firing a weapon raises heat;
-// police spawn at the city edge, chase, ram, and back off when the heat dies.
+// police.js — the Solmar PD: wanted heat, interceptors, roadblocks.
+// Rebuilt for the East update with a proper pursuit model. The wanted
+// level is heat on a 0–150 scale: crimes add heat, the level is the
+// heat band, and the heat cools when Mara stays out of sight. Each
+// level sends more interceptors, and from level 4 the PD tries a PIT
+// maneuver — pulling alongside and swerving into her rear quarter. At
+// level 3 and above the PD throws up roadblocks on the road ahead,
+// spike strips included. The helicopter (heli.js) is a separate system
+// that only joins at level 5.
 
 import * as THREE from 'three';
-import { clamp, lerpAngle, dist2D } from './util.js';
+import { clamp, rand, lerpAngle, dist2D } from './util.js';
 import { CITY_HALF, ROAD_SPACING, randomRoadPoint, hitsBuilding } from './city.js';
 import { makeCar } from './cars.js';
 
 export const MAX_WANTED = 5;
 
+// Heat bands: the level is the highest band the heat has reached.
+export const STAR_HEAT = [0, 25, 50, 75, 100, 130];
+
 export function makeWanted() {
   return {
     level: 0,
-    heat: 0, // 0..100, fills toward the next star
-    decayTimer: 0,
+    heat: 0, // 0..150; the level follows the heat bands
+    decayTimer: 0, // seconds since the last crime — cooling starts after 6
     busted: false,
   };
 }
 
-// Heat thresholds: how much heat each star needs.
-const STAR_HEAT = [0, 25, 50, 75, 100, 130];
-
+// A crime adds heat and may raise the level. Returns what changed, so
+// the caller can toast the new level.
 export function addHeat(wanted, amount, reason) {
+  const before = wanted.level;
   wanted.heat = clamp(wanted.heat + amount, 0, 150);
   wanted.decayTimer = 0;
-  const level = STAR_HEAT.reduce((lvl, need, i) => (wanted.heat >= need ? i : lvl), 0);
-  const rose = level > wanted.level;
-  wanted.level = Math.min(MAX_WANTED, level);
-  return { rose, level: wanted.level, reason };
+  let level = 0;
+  for (let i = 1; i <= MAX_WANTED; i++) {
+    if (wanted.heat >= STAR_HEAT[i]) level = i;
+  }
+  wanted.level = level;
+  return { rose: level > before, level, reason: reason || 'crime' };
 }
 
-export function updateWanted(wanted, dt, playerHidden, heliOverhead) {
-  // Heat cools off when the player is out of sight and not committing crimes.
-  // The helicopter changes the maths: while its spotlight is on Mara, the
-  // PD never loses her, so the heat cools at half speed.
+// One frame of the heat: after six quiet seconds it starts to cool.
+// Hiding (no police nearby) cools twice as fast; the helicopter's
+// spotlight overhead halves the rate — the eye never loses her.
+export function updateWanted(wanted, dt, playerHidden, heliOverhead, decayBoost) {
   wanted.decayTimer += dt;
-  if (wanted.decayTimer > 6) {
-    const rate = (playerHidden ? 6 : 2.5) * (heliOverhead ? 0.5 : 1);
-    wanted.heat = Math.max(0, wanted.heat - rate * dt);
-    const level = STAR_HEAT.reduce((lvl, need, i) => (wanted.heat >= need ? i : lvl), 0);
-    wanted.level = Math.min(MAX_WANTED, level);
+  if (wanted.decayTimer < 6) return wanted.level;
+  const base = playerHidden ? 6 : 2.5;
+  // Nix the hacker cools the heat twice as fast: the crew's edge is a
+  // multiplier on the decay rate, defaulting to 1 when she is not hired.
+  const rate = base * (heliOverhead ? 0.5 : 1) * (decayBoost || 1);
+  wanted.heat = Math.max(0, wanted.heat - rate * dt);
+  let level = 0;
+  for (let i = 1; i <= MAX_WANTED; i++) {
+    if (wanted.heat >= STAR_HEAT[i]) level = i;
   }
+  wanted.level = level;
   return wanted.level;
 }
 
-// Radio chatter for the wanted level: what the dispatcher says when the
-// heat rises. main.js shows one line per new star.
-export function pdDispatchText(level) {
-  return [
-    '',
-    'All units: a suspect is on foot in the city. Keep your eyes open.',
-    'Units, we have a runner in a vehicle. Intercept and box them in.',
-    'Three stars: roadblocks are going up on the avenues. Do not let them through.',
-    'Four stars: spike strips authorized. Bring that car to a stop.',
-    'Five stars: the chopper is on station. The eye in the sky never loses them.',
-  ][clamp(level, 0, 5)];
+// How many interceptors the level puts on the street.
+export function wantedForLevel(level) {
+  return [0, 1, 2, 3, 4, 5][clamp(level | 0, 0, 5)];
 }
 
-export function wantedForLevel(level) {
-  // How many police cars a wanted level fields.
-  return [0, 1, 2, 3, 4, 5][clamp(level, 0, 5)];
+// What the dispatcher says when the level rises: one line per star,
+// each nastier than the last.
+export function pdDispatchText(level) {
+  const lines = [
+    '',
+    'All units: a suspect is loose in the city. Keep your eyes open.',
+    'Units, we have a runner in a vehicle. Intercept and box them in.',
+    'Three stars: roadblocks are going up on the avenues. Do not let them through.',
+    'Four stars: PIT maneuvers authorized. Bring that car around.',
+    'Five stars: the chopper is on station and every unit in Solmar is rolling. The eye in the sky never loses them.',
+  ];
+  return lines[clamp(level | 0, 0, 5)] || '';
 }
 
 // --- roadblocks ------------------------------------------------------------
 // At three stars and above the PD throws up roadblocks: two interceptors
-// parked sideways across the road ahead of the player, with striped
-// barriers filling the gaps. The barriers are real colliders, so the
-// player must slip around them, thread the gap, or ram straight through.
+// parked sideways across the road ahead of the player, striped barriers
+// filling the gaps, and a spike strip on the near side. The barriers
+// are real colliders, so the player must slip around them, thread the
+// gap, or ram straight through.
 export function roadblockSpot(playerX, playerZ, heading) {
   const ahead = 55;
   const rawX = playerX + Math.sin(heading) * ahead;
   const rawZ = playerZ + Math.cos(heading) * ahead;
   const lanes = [];
   for (let v = -CITY_HALF + 35; v <= CITY_HALF - 35; v += ROAD_SPACING) lanes.push(v);
-  const nearestLane = (v) => lanes.reduce((best, l) => (Math.abs(l - v) < Math.abs(best - v) ? l : best), lanes[0]);
+  const nearestLane = (v) => lanes.reduce(
+    (best, l) => (Math.abs(l - v) < Math.abs(best - v) ? l : best),
+    lanes[0],
+  );
   // Snap across the road, not along it: a car travelling along an avenue
   // (heading near 0 or PI) meets a roadblock on the nearest avenue.
   if (Math.abs(Math.sin(heading)) > Math.abs(Math.cos(heading))) {
@@ -141,7 +162,13 @@ export function spawnRoadblock(scene, x, z, heading, colliders) {
     scene.add(spike);
     spikeMeshes.push(spike);
   }
-  return { group, cars, barriers, colliders: pushed, spikeMeshes, spikes: { x: spikeX, z: spikeZ, used: false }, x, z, heading };
+  return {
+    group, cars, barriers,
+    colliders: pushed,
+    spikeMeshes,
+    spikes: { x: spikeX, z: spikeZ, used: false },
+    x, z, heading,
+  };
 }
 
 export function despawnRoadblock(scene, roadblock, colliders) {
@@ -158,30 +185,58 @@ export function despawnRoadblock(scene, roadblock, colliders) {
 
 // --- police cars -------------------------------------------------------------
 
+// A fresh interceptor: spawns on a road 90 metres out from the player,
+// heading toward them, and joins the pursuit. Higher levels make it
+// faster and bolder, and it carries the pursuit state for PIT attempts.
 export function spawnPoliceCar(scene, nearX, nearZ, level = 1) {
-  // Spawn on a road some distance away, coming toward the player.
   const spot = randomRoadPoint();
   const dx = spot.x - nearX;
   const dz = spot.z - nearZ;
   const d = Math.sqrt(dx * dx + dz * dz) || 1;
   const x = nearX + (dx / d) * 90;
   const z = nearZ + (dz / d) * 90;
-  const car = makeCar('police', x, z, Math.atan2(nearX - x, nearZ - z));
-  // Interceptors get faster as the wanted level climbs.
+  const car = makeCar(level >= 5 ? 'interceptor' : 'police', x, z, Math.atan2(nearX - x, nearZ - z));
   car.maxSpeed = 29 + Math.min(7, level * 1.5);
   car.targetSpeed = 0;
   car.ramCooldown = 0;
+  car.pitTimer = 0; // seconds until the next PIT side-swap
+  car.pitSide = 1;
+  car.weavePhase = rand(0, Math.PI * 2);
   scene.add(car.mesh);
   return car;
 }
 
-// Chase the target: steer toward it, ram when close, recover from walls.
+// Chase the target: steer toward it, ram when close, recover from
+// walls. At level 4 and above the unit tries a PIT maneuver: it pulls
+// alongside the player's rear quarter, then swerves into it. Returns
+// the distance to the target, for the caller's siren and bust logic.
 export function updatePoliceCar(car, targetX, targetZ, targetSpeed, dt, colliders, onRam, level) {
   const d = dist2D(car.x, car.z, targetX, targetZ);
-  const wantHeading = Math.atan2(targetX - car.x, targetZ - car.z);
+  // Aim: straight at the target, with a PIT offset at high levels and
+  // a gentle weave at low ones so the pursuit does not look robotic.
+  let aimX = targetX;
+  let aimZ = targetZ;
+  if ((level || 1) >= 4) {
+    car.pitTimer -= dt;
+    if (car.pitTimer <= 0) {
+      car.pitTimer = 4 + rand(0, 3);
+      car.pitSide = car.pitSide === 1 ? -1 : 1;
+    }
+    const side = car.pitSide || 1;
+    const px = -(targetZ - car.z) / (d || 1);
+    const pz = (targetX - car.x) / (d || 1);
+    const offset = d < 14 ? side * 4.5 : side * 2;
+    aimX = targetX + px * offset;
+    aimZ = targetZ + pz * offset;
+  } else {
+    const weave = Math.sin(car.weavePhase + d * 0.04) * 3;
+    aimX = targetX + (-(targetZ - car.z) / (d || 1)) * weave;
+    aimZ = targetZ + ((targetX - car.x) / (d || 1)) * weave;
+  }
+  const wantHeading = Math.atan2(aimX - car.x, aimZ - car.z);
   car.heading = lerpAngle(car.heading, wantHeading, Math.min(1, dt * 2.2));
-  // Faster than the player when far, easing off when right on top of them.
-  // At high wanted levels the interceptors push harder.
+  // Faster than the player when far, easing off when right on top of
+  // them so the ram lands instead of overshooting.
   const boost = level ? Math.min(6, level * 1.2) : 0;
   const desired = d > 60 ? car.maxSpeed + boost : d > 18 ? 26 + boost : 16;
   car.speed += (desired - car.speed) * Math.min(1, dt * 1.4);
@@ -199,7 +254,7 @@ export function updatePoliceCar(car, targetX, targetZ, targetSpeed, dt, collider
   car.mesh.rotation.y = car.heading;
   const spin = car.speed * dt * 2.4;
   for (const w of car.mesh.userData.wheels) w.rotation.x += spin;
-  // Flashing light bar.
+  // Flashing light bar: red and blue alternate twice a second.
   const bar = car.mesh.userData.lightBar;
   if (bar) {
     const on = Math.floor(performance.now() / 180) % 2 === 0;
@@ -221,3 +276,12 @@ export function nearestPoliceDistance(cars, x, z) {
   for (const c of cars) best = Math.min(best, dist2D(c.x, c.z, x, z));
   return best;
 }
+
+// Stealing a rare car is grand theft: six heat, not two — the city
+// notices when a one-of-one goes missing.
+export const RARE_CAR_HEAT = 6;
+export const GRAFFITI_HEAT = 1; // a cop catching Mara mid-spray adds one star
+
+// Heat cools on its own when Mara stays clean: 1.5 heat per second
+// with no new crime, so a quiet drive home is a real way out.
+export const HEAT_DECAY_PER_SECOND = 1.5;

@@ -140,6 +140,90 @@ export function buildPedMesh(shirt, pants, variant) {
     );
     towel.position.set(0, 1.0, -0.2);
     group.add(towel);
+  } else if (variant === 'dealer') {
+    // Casino dealer: a black jacket, a gold bow tie, and a deck in hand.
+    const jacket = new THREE.Mesh(
+      new THREE.BoxGeometry(0.58, 0.6, 0.34),
+      new THREE.MeshStandardMaterial({ color: 0x14141a, roughness: 0.7 }),
+    );
+    jacket.position.y = 1.2;
+    group.add(jacket);
+    const bow = new THREE.Mesh(
+      new THREE.BoxGeometry(0.24, 0.1, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0xf2c230, roughness: 0.4, metalness: 0.6 }),
+    );
+    bow.position.set(0, 1.56, 0.18);
+    group.add(bow);
+  } else if (variant === 'clubber') {
+    // Clubber: neon shirt, dark pants, and a glow stick in hand — the
+    // night crowd at Club Neon, out until the sun comes up.
+    const glow = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.5, 0.08),
+      new THREE.MeshBasicMaterial({ color: 0xff2e88 }),
+    );
+    glow.position.set(0.44, 1.1, 0.12);
+    group.add(glow);
+    const shade = new THREE.Mesh(
+      new THREE.BoxGeometry(0.42, 0.1, 0.3),
+      new THREE.MeshStandardMaterial({ color: 0x14141a, roughness: 0.4 }),
+    );
+    shade.position.set(0, 1.78, 0.05);
+    group.add(shade);
+  } else if (variant === 'tagger') {
+    // Tagger: a Mural Row kid in a purple hoodie, spray can in hand —
+    // the street artists who paint the twelve walls by day and tag
+    // the back alleys by night.
+    const can = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.06, 0.28, 8),
+      new THREE.MeshStandardMaterial({ color: 0xffc300, roughness: 0.4, metalness: 0.5 }),
+    );
+    can.position.set(0.44, 1.1, 0.12);
+    group.add(can);
+    const hood = new THREE.Mesh(
+      new THREE.BoxGeometry(0.44, 0.14, 0.42),
+      new THREE.MeshStandardMaterial({ color: 0x6a3a8a, roughness: 0.9 }),
+    );
+    hood.position.set(0, 1.8, 0);
+    group.add(hood);
+  } else if (variant === 'student') {
+    // University student: a backpack and a stack of books under one arm.
+    const pack = new THREE.Mesh(
+      new THREE.BoxGeometry(0.44, 0.55, 0.22),
+      new THREE.MeshStandardMaterial({ color: 0x2e6fd8, roughness: 0.85 }),
+    );
+    pack.position.set(0, 1.25, -0.26);
+    group.add(pack);
+    const books = new THREE.Mesh(
+      new THREE.BoxGeometry(0.3, 0.12, 0.4),
+      new THREE.MeshStandardMaterial({ color: 0xd8382e, roughness: 0.8 }),
+    );
+    books.position.set(-0.4, 1.05, 0.1);
+    group.add(books);
+  } else if (variant === 'shopper') {
+    // Mall shopper: shopping bags in both hands, in the mall's colours.
+    for (const side of [-1, 1]) {
+      const bag = new THREE.Mesh(
+        new THREE.BoxGeometry(0.28, 0.4, 0.18),
+        new THREE.MeshStandardMaterial({ color: side < 0 ? 0xffd23e : 0xd84a6a, roughness: 0.8 }),
+      );
+      bag.position.set(side * 0.44, 0.85, 0.12);
+      group.add(bag);
+    }
+  } else if (variant === 'informant') {
+    // An informant: a trench coat and a wide hat, standing in the
+    // shadows by the back alley — the street's eyes, for a price.
+    const coat = new THREE.Mesh(
+      new THREE.BoxGeometry(0.7, 1.1, 0.4),
+      new THREE.MeshStandardMaterial({ color: 0x2a2018, roughness: 0.9 }),
+    );
+    coat.position.set(0, 0.95, 0);
+    group.add(coat);
+    const hat = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.3, 0.34, 0.22, 8),
+      new THREE.MeshStandardMaterial({ color: 0x1a1a1e, roughness: 0.9 }),
+    );
+    hat.position.set(0, 2.05, 0);
+    group.add(hat);
   }
   group.userData = { legL, legR, armL, armR };
   return group;
@@ -158,9 +242,10 @@ export function spawnPedestrian(scene, forcedVariant) {
   // Most people are plain walkers; the rest are joggers, dockworkers,
   // tourists and older locals, each with their own pace and gear. Pilots
   // and resort guests never spawn on the street — they belong to the
-  // airport and the resort, where main.js places them by hand.
+  // airport and the resort, where main.js places them by hand. Students
+  // and shoppers are the same: the campus and the mall place them.
   const variant = forcedVariant || pickWeighted([
-    ['walker', 55], ['jogger', 15], ['worker', 12], ['tourist', 10], ['elder', 8],
+    ['walker', 55], ['jogger', 15], ['worker', 12], ['tourist', 10], ['elder', 8], ['informant', 2], ['tagger', 6],
   ]);
   const mesh = buildPedMesh(pick(SHIRTS), pick(PANTS), variant);
   mesh.position.set(x, 0, z);
@@ -205,6 +290,17 @@ export function spawnPedestrianPair(scene) {
   first.chatPartner = second;
   second.chatPartner = first;
   return [first, second];
+}
+
+// A crew of taggers at a wall: they stand and work, frozen in place
+// while the fair runs, so the wall reads as painted live.
+export function spawnTaggerCrew(scene, x, z, count, props) {
+  for (let i = 0; i < count; i++) {
+    const ped = spawnPedestrianAt(scene, x + (i - (count - 1) / 2) * 4, z + rand(-2, 2), 'tagger');
+    ped.wait = 999;
+    ped.speed = 0;
+    props.push(ped.mesh);
+  }
 }
 
 export function spawnPedestrianAt(scene, x, z, variant) {
@@ -370,4 +466,16 @@ export function updatePedestrian(ped, dt, threats) {
   ped.mesh.userData.legR.rotation.x = -swing;
   ped.mesh.userData.armL.rotation.x = -swing * 0.7;
   ped.mesh.userData.armR.rotation.x = swing * 0.7;
+}
+
+// Two vendors hold the jobs board at the garage — one takes the
+// delivery slips, the other knows every pickup in the city.
+export function spawnJobClients(scene) {
+  return [spawnVendor(scene, 132, -132), spawnVendor(scene, 148, -132)];
+}
+
+// Two spotters watch the rare cars: one on the plaza, one at the
+// marina — they trade rumors, and Leo repeats the good ones.
+export function spawnRareSpotters(scene) {
+  return [spawnVendor(scene, 10, -30), spawnVendor(scene, -230, 160)];
 }

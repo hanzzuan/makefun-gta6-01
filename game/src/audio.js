@@ -13,6 +13,10 @@ let sirenGain = null;
 let rotorOsc = null;
 let rotorGain = null;
 let musicNodes = null;
+let boatOsc = null; // the boat's outboard motor hum
+let boatGain = null;
+let radioMood = 'day'; // the radio station's mood: day | rock | night | talk
+let skyMood = 'day'; // the last day/night mood the sky asked for
 
 export function initAudio() {
   if (ctx) return;
@@ -81,6 +85,9 @@ export const sfx = {
   click() { blip(660, 0.07, 'square', 0.12); },
   pickup() { blip(520, 0.09, 'sine', 0.25, 880); setTimeout(() => blip(880, 0.12, 'sine', 0.2, 1320), 80); },
   cash() { blip(988, 0.1, 'triangle', 0.25); setTimeout(() => blip(1319, 0.16, 'triangle', 0.25), 90); },
+  chip() { blip(1200, 0.05, 'square', 0.12); setTimeout(() => blip(1500, 0.05, 'square', 0.1), 50); },
+  hire() { blip(440, 0.1, 'triangle', 0.2, 660); setTimeout(() => blip(660, 0.14, 'triangle', 0.2, 880), 90); },
+  jackpot() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => blip(f, 0.14, 'triangle', 0.25), i * 110)); },
   gunshot() { noiseBurst(0.14, 0.5, 900); blip(160, 0.1, 'square', 0.2, 60); },
   punch() { noiseBurst(0.08, 0.35, 500); },
   crash() { noiseBurst(0.3, 0.5, 400); blip(90, 0.25, 'sawtooth', 0.2, 45); },
@@ -100,6 +107,36 @@ export const sfx = {
   checkpoint() { blip(1046, 0.09, 'triangle', 0.25); setTimeout(() => blip(1568, 0.14, 'triangle', 0.25), 70); },
   // Garage: a wrench clink followed by the till — an upgrade is bought.
   upgrade() { blip(2400, 0.05, 'square', 0.12); setTimeout(() => blip(988, 0.1, 'triangle', 0.25), 90); setTimeout(() => blip(1319, 0.14, 'triangle', 0.25), 180); },
+  // A boat horn: two low notes across the bay.
+  boatHorn() { blip(196, 0.4, 'sawtooth', 0.2); setTimeout(() => blip(147, 0.5, 'sawtooth', 0.2), 200); },
+  // Keys jingling: a property just changed hands.
+  keys() { blip(1568, 0.05, 'square', 0.12); setTimeout(() => blip(2093, 0.06, 'square', 0.12), 70); setTimeout(() => blip(1568, 0.05, 'square', 0.12), 140); },
+  // A crowd cheering: a festival, a parade, a race won.
+  cheer() { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => blip(f, 0.18, 'triangle', 0.2), i * 90)); },
+  // The DJ set: a low thump on every beat, so the pulse is felt as
+  // well as seen — and a bright chirp when a hit lands perfect.
+  beat() { blip(110, 0.1, 'sine', 0.4, 55); },
+  perfect() { blip(1568, 0.08, 'triangle', 0.25); setTimeout(() => blip(2093, 0.12, 'triangle', 0.25), 60); },
+  // A rare car collected: a bright two-note chime, then the till.
+  collect() { blip(1046, 0.1, 'triangle', 0.25); setTimeout(() => blip(1568, 0.16, 'triangle', 0.25), 90); setTimeout(() => blip(988, 0.12, 'triangle', 0.25), 200); },
+  // A job posted on the board: a short ring, like a bell at the garage.
+  job() { blip(880, 0.08, 'square', 0.18); setTimeout(() => blip(1174, 0.1, 'square', 0.18), 90); },
+  // Photo mode: a camera shutter — a click, then a softer one.
+  shutter() { noiseBurst(0.05, 0.4, 2000); setTimeout(() => blip(1200, 0.05, 'square', 0.1), 120); },
+  // A rumor heard: a low murmur, like a voice across the plaza.
+  rumor() { blip(330, 0.12, 'sine', 0.15, 280); setTimeout(() => blip(294, 0.12, 'sine', 0.15), 130); },
+  // A bounty taken: a two-note siren sting — the hunt is on, and Vex heard it too.
+  bounty() { blip(440, 0.16, 'square', 0.2, 587); setTimeout(() => blip(587, 0.2, 'square', 0.2, 440), 140); },
+  // A spray can: a short hiss of propellant, then a soft tick as the
+  // nozzle clears — the sound of a wall changing colour.
+  spray() { blip(1800, 0.03, 'square', 0.04); },
+  // A tag war: a low two-note alarm — Rocco's runners just painted
+  // over one of Mara's walls.
+  tagwar() { blip(220, 0.2, 'sawtooth', 0.15); setTimeout(() => blip(165, 0.25, 'sawtooth', 0.15), 180); },
+  // A perfect streak: three rising notes, one per perfect coat in a row.
+  streak() { blip(523, 0.08, 'square', 0.1); setTimeout(() => blip(659, 0.08, 'square', 0.1), 90); setTimeout(() => blip(784, 0.12, 'square', 0.12), 180); },
+  // A perfect coat: a single bright ping, the sound of a clean line.
+  perfect() { blip(1046, 0.09, 'square', 0.1); },
 };
 
 // --- engine hum: a looped oscillator whose pitch follows speed -------------
@@ -126,6 +163,35 @@ export function setEngine(speedRatio, on, tone) {
   // A bike buzzes high, a truck rumbles low, a car sits in the middle.
   const base = tone === 'motorcycle' ? 84 : tone === 'truck' ? 40 : 52;
   if (engineOsc) engineOsc.frequency.setTargetAtTime(base + speedRatio * 95, ctx.currentTime, 0.1);
+}
+
+// --- boat engine: a low outboard drone whose pitch follows boat speed ---
+export function startBoat() {
+  if (!ctx || boatOsc) return;
+  boatOsc = ctx.createOscillator();
+  boatOsc.type = 'sawtooth';
+  boatOsc.frequency.value = 48;
+  boatGain = ctx.createGain();
+  boatGain.gain.value = 0;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 300;
+  boatOsc.connect(filter);
+  filter.connect(boatGain);
+  boatGain.connect(master);
+  boatOsc.start();
+}
+
+export function setBoat(speedRatio) {
+  if (!boatGain) return;
+  const target = !muted ? 0.04 + speedRatio * 0.06 : 0;
+  boatGain.gain.setTargetAtTime(target, ctx.currentTime, 0.1);
+  if (boatOsc) boatOsc.frequency.setTargetAtTime(48 + speedRatio * 70, ctx.currentTime, 0.12);
+}
+
+export function stopBoat() {
+  if (!boatGain) return;
+  boatGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
 }
 
 export function stopEngine() {
@@ -241,9 +307,11 @@ export function stopRain() {
 }
 
 // --- sunset pad: slow chords that loop under the game ----------------------
-// Two moods: warm major chords by day, a moodier minor set after dark.
-// Each mood has its own oscillators and gains, so switching moods just
-// fades one set out and the other in — never both at once.
+// Four moods, one per radio station: warm major chords by day (Sunset
+// FM), a moodier minor set after dark (Night Drive), a driving rock set
+// (Harbour Rock), and silence for Talk Solmar. Each mood has its own
+// oscillators and gains, so switching stations just fades one set out
+// and the other in — never two at once.
 export function startMusic() {
   if (!ctx || musicNodes) return;
   const dayChords = [
@@ -257,6 +325,12 @@ export function startMusic() {
     [196.0, 233.08, 293.66],
     [174.61, 220.0, 261.63],
     [146.83, 174.61, 220.0],
+  ];
+  const rockChords = [
+    [110.0, 164.81, 220.0],
+    [98.0, 146.83, 196.0],
+    [123.47, 185.0, 246.94],
+    [87.31, 130.81, 174.61],
   ];
   function buildSet(chordList) {
     const gains = chordList.map(() => {
@@ -279,32 +353,59 @@ export function startMusic() {
   }
   const day = buildSet(dayChords);
   const night = buildSet(nightChords);
+  const rock = buildSet(rockChords);
+  const sets = { day, night, rock };
   let step = 0;
   let mood = 'day';
   const timer = setInterval(() => {
     if (!ctx || muted) return;
     const t = ctx.currentTime;
-    const on = mood === 'night' ? night : day;
-    const off = mood === 'night' ? day : night;
-    on.gains.forEach((g, i) => {
-      g.gain.setTargetAtTime(i === step % dayChords.length ? 0.035 : 0, t, 1.2);
-    });
-    off.gains.forEach((g) => g.gain.setTargetAtTime(0, t, 1.2));
+    // Talk Solmar plays no music at all: every set fades to silence.
+    if (mood === 'talk') {
+      for (const set of Object.values(sets)) {
+        set.gains.forEach((g) => g.gain.setTargetAtTime(0, t, 1.2));
+      }
+      step += 1;
+      return;
+    }
+    const on = sets[mood] || day;
+    for (const [key, set] of Object.entries(sets)) {
+      set.gains.forEach((g, i) => {
+        const target = key === (sets[mood] ? mood : 'day') && i === step % dayChords.length ? 0.035 : 0;
+        g.gain.setTargetAtTime(target, t, 1.2);
+      });
+    }
     step += 1;
   }, 6000);
-  musicNodes = { day, night, timer, get mood() { return mood; }, set mood(m) { mood = m; } };
+  musicNodes = { day, night, rock, timer, get mood() { return mood; }, set mood(m) { mood = m; } };
 }
 
-// Switch the pad between its day and night chord sets.
+// Switch the pad between its day and night chord sets. The radio owns
+// the final say: when a station forces a mood (rock, night, talk), the
+// sky's day/night call is ignored until Sunset FM is back on the dial.
 export function setMusicMood(mood) {
   if (!musicNodes) return;
-  musicNodes.mood = mood === 'night' ? 'night' : 'day';
+  skyMood = mood === 'night' ? 'night' : 'day';
+  if (radioMood === 'rock') musicNodes.mood = 'rock';
+  else if (radioMood === 'night') musicNodes.mood = 'night';
+  else if (radioMood === 'talk') musicNodes.mood = 'talk';
+  else musicNodes.mood = skyMood;
+}
+
+// The radio dial: station 0 is Sunset FM (follows the sky), 1 is
+// Harbour Rock, 2 is Night Drive, 3 is Talk Solmar (no music).
+export function setRadioStation(index) {
+  const moods = ['day', 'rock', 'night', 'talk'];
+  radioMood = moods[index] || 'day';
+  if (!musicNodes) return;
+  if (radioMood === 'day') musicNodes.mood = skyMood;
+  else musicNodes.mood = radioMood;
 }
 
 export function stopMusic() {
   if (!musicNodes) return;
   clearInterval(musicNodes.timer);
-  for (const set of [musicNodes.day, musicNodes.night]) {
+  for (const set of [musicNodes.day, musicNodes.night, musicNodes.rock]) {
     for (const row of set.oscs) for (const o of row) { try { o.stop(); } catch { /* noop */ } }
   }
   musicNodes = null;

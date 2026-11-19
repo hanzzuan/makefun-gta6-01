@@ -54,13 +54,48 @@ export function dist2D(ax, az, bx, bz) {
 }
 
 // Angle (radians) from point a to point b on the XZ plane.
+// The nearest point to (x, z) in a list of { x, z } points, ignoring
+// any point whose id is in `skip`. Returns null when nothing qualifies.
+export function nearestBy(points, x, z, skip) {
+  let best = null;
+  let bestD = Infinity;
+  for (const point of points) {
+    if (skip && skip.includes(point.id)) continue;
+    const d = dist2D(x, z, point.x, point.z);
+    if (d < bestD) {
+      bestD = d;
+      best = point;
+    }
+  }
+  return best;
+}
+
+// How far the spray needle sits from the middle, 0 at dead centre and
+// 1 at the edge — a perfect coat needs it within 0.15 of the middle.
+export function sprayOff(needle) {
+  return Math.abs(needle - 0.5) * 2;
+}
+
 export function angleTo(ax, az, bx, bz) {
   return Math.atan2(bx - ax, bz - az);
 }
 
-// Format an amount of in-game dollars with thousands separators.
+// Format an amount of in-game dollars with thousands separators. A
+// negative amount — a casino night gone wrong — reads with a minus.
 export function money(n) {
-  return '$' + Math.floor(n).toLocaleString('en-US');
+  const v = Math.floor(n);
+  return (v < 0 ? '−$' : '$') + Math.abs(v).toLocaleString('en-US');
+}
+
+// Short money for tight HUD space: $12.5k instead of $12,500, $1.2m
+// past a million. Used for big payouts and property prices.
+export function moneyShort(n) {
+  const v = Math.floor(n);
+  const sign = v < 0 ? '−$' : '$';
+  const a = Math.abs(v);
+  if (a >= 1000000) return sign + (a / 1000000).toFixed(1).replace(/\.0$/, '') + 'm';
+  if (a >= 1000) return sign + (a / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return sign + a;
 }
 
 // Clamp a value to the 0..1 range, for fades and blends.
@@ -121,4 +156,58 @@ export function chance(p) {
 export function easeInOut(t) {
   const x = clamp01(t);
   return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+}
+
+// The shortest signed turn from one heading to another, in radians,
+// wrapped to [-PI, PI]: how far — and in which direction — a rival
+// boat, a heli, or a chasing cop must turn to face its target.
+export function wrapAngle(angle) {
+  let a = angle;
+  while (a > Math.PI) a -= Math.PI * 2;
+  while (a < -Math.PI) a += Math.PI * 2;
+  return a;
+}
+
+// A random point inside a circle of the given radius around a centre:
+// where a campus crowd gathers, or where a parade route drops its
+// confetti. Uniform across the area, not the radius.
+export function randomPointInCircle(cx, cz, radius) {
+  const r = radius * Math.sqrt(Math.random());
+  const a = Math.random() * Math.PI * 2;
+  return { x: cx + Math.cos(a) * r, z: cz + Math.sin(a) * r };
+}
+
+// A countdown in M:SS, for the race par times and the timed mission
+// stages: 95 seconds reads 1:35, 40 reads 0:40.
+export function formatCountdown(seconds) {
+  const whole = Math.max(0, Math.ceil(seconds));
+  const m = Math.floor(whole / 60);
+  const s = whole % 60;
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+// Fisher–Yates shuffle, in place, returning the same array: the
+// playlist order for the radio stations and the event rotation.
+export function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = array[i];
+    array[i] = array[j];
+    array[j] = t;
+  }
+  return array;
+}
+
+// A duration in seconds as m:ss — the jobs board timer and the race
+// clock both read better than raw seconds.
+// A countdown as m:ss, for the bounty clock and any other timer that
+// reads better in minutes than in raw seconds.
+export function secondsToClock(seconds) {
+  const s = Math.max(0, Math.ceil(seconds));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+export function formatDuration(seconds) {
+  const s = Math.max(0, Math.ceil(seconds));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 }

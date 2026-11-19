@@ -10,12 +10,33 @@ export function makeEnemy(scene, x, z, variant) {
   // crew in dark red — tougher and quicker on the trigger — 'collector'
   // is the man himself, slow but deadly accurate, 'guard' is his resort
   // and airport security in navy blue, and 'venn' is the fixer himself:
-  // the toughest man in Solmar, in a grey suit with a red tie.
+  // the toughest man in Solmar, in a grey suit with a red tie. After
+  // Venn fell, Rocco's crew moved in: 'rival' is an east-side runner in
+  // orange with a gold chain, and 'boss' is Rocco himself in a white
+  // suit — the hardest fight in the city. Club Neon hired its own
+  // muscle after Mara took over: 'bouncer' is a door man in a black
+  // vest, big, slow, and hard to put down. The bay has its own crew
+  // now: 'smuggler' runs the lighthouse road in teal — fast on the
+  // trigger, light on health. The wanted board added its own crew:
+  // 'fugitive' is a runner in dusty grey-green, 'fugitive-armoured'
+  // is a heavy in a dark vest, and 'fugitive-boss' is the Ghost of
+  // Solmar in black — the hardest single bounty on the board. The
+  // streets added their own crew after the walls went up: 'tagger' is
+  // a Mural Row kid in a purple hoodie, quick and light, carrying a
+  // spray can instead of a gun.
   const kind = variant || 'crew';
   const suitColor = kind === 'enforcer' ? 0x4a1e22
     : kind === 'collector' ? 0x14141a
     : kind === 'guard' ? 0x1a2a4a
     : kind === 'venn' ? 0x4a4a52
+    : kind === 'rival' ? 0x8a4a1a
+    : kind === 'boss' ? 0xe8e4da
+    : kind === 'bouncer' ? 0x2a1a2e
+    : kind === 'smuggler' ? 0x1a4a3a
+    : kind === 'tagger' ? 0x6a3a8a
+    : kind === 'fugitive' ? 0x3a3a2e
+    : kind === 'fugitive-armoured' ? 0x2e2e3a
+    : kind === 'fugitive-boss' ? 0x14141a
     : 0x2e2a3a;
   const group = new THREE.Group();
   const suit = new THREE.MeshStandardMaterial({ color: suitColor, roughness: 0.8 });
@@ -58,6 +79,53 @@ export function makeEnemy(scene, x, z, variant) {
     shirt.position.y = 1.25;
     group.add(shirt);
   }
+  // Rivals wear a gold chain and an orange armband; Rocco wears a red
+  // tie like Venn did, and a gold watch — the two men the player must
+  // spot in a crowd of suits.
+  if (kind === 'rival') {
+    const chain = new THREE.Mesh(
+      new THREE.BoxGeometry(0.34, 0.08, 0.06),
+      new THREE.MeshStandardMaterial({ color: 0xf2c230, roughness: 0.3, metalness: 0.8 }),
+    );
+    chain.position.set(0, 1.58, 0.18);
+    group.add(chain);
+    const band = new THREE.Mesh(
+      new THREE.BoxGeometry(0.62, 0.12, 0.34),
+      new THREE.MeshStandardMaterial({ color: 0xff7a1a, roughness: 0.7 }),
+    );
+    band.position.y = 1.45;
+    group.add(band);
+  }
+  if (kind === 'boss') {
+    const tie = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 0.55, 0.04),
+      new THREE.MeshStandardMaterial({ color: 0xd8382e, roughness: 0.7 }),
+    );
+    tie.position.set(0, 1.35, 0.18);
+    group.add(tie);
+    const watch = new THREE.Mesh(
+      new THREE.BoxGeometry(0.1, 0.08, 0.1),
+      new THREE.MeshStandardMaterial({ color: 0xf2c230, roughness: 0.3, metalness: 0.8 }),
+    );
+    watch.position.set(0.36, 1.05, 0.3);
+    group.add(watch);
+  }
+  // Bouncers wear a wide black vest and an earpiece — the door men
+  // of Club Neon, built like a wall and just as hard to move.
+  if (kind === 'bouncer') {
+    const vest = new THREE.Mesh(
+      new THREE.BoxGeometry(0.68, 0.75, 0.36),
+      new THREE.MeshStandardMaterial({ color: 0x0f0f12, roughness: 0.6 }),
+    );
+    vest.position.y = 1.25;
+    group.add(vest);
+    const ear = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, 0.1, 0.06),
+      new THREE.MeshStandardMaterial({ color: 0x1a1a1e, roughness: 0.5 }),
+    );
+    ear.position.set(-0.2, 1.82, 0.12);
+    group.add(ear);
+  }
   // Guards wear a gold badge on the chest; Venn wears a red tie and a
   // gold watch — the two men the player must spot in a crowd of suits.
   if (kind === 'guard') {
@@ -89,7 +157,7 @@ export function makeEnemy(scene, x, z, variant) {
     mesh: group,
     x, z,
     variant: kind,
-    health: kind === 'venn' ? 300 : kind === 'collector' ? 220 : kind === 'enforcer' ? 150 : kind === 'guard' ? 120 : 100,
+    health: kind === 'venn' ? 300 : kind === 'boss' ? 260 : kind === 'collector' ? 220 : kind === 'bouncer' ? 200 : kind === 'fugitive-boss' ? 280 : kind === 'fugitive-armoured' ? 220 : kind === 'enforcer' ? 150 : kind === 'fugitive' ? 150 : kind === 'rival' ? 130 : kind === 'guard' ? 120 : kind === 'smuggler' ? 90 : 100,
     alive: true,
     fireTimer: rand(0.5, 1.5),
     duckTimer: 0,
@@ -99,8 +167,46 @@ export function makeEnemy(scene, x, z, variant) {
 
 // Enemy AI: face the player, fire in bursts when in range and line of sight.
 // Enforcers fire faster, the collector rarely misses up close.
+// A downed enemy drops the cash in his pockets: rivals carry $25,
+// Rocco himself $250. The main loop banks it when a shot kills.
+// A Mural Row tagger as an enemy: a purple hoodie, quick and light,
+// carrying a spray can instead of a gun — the street's own crew,
+// and the one the screenshot presets stage at the walls.
+export function makeTagger(scene, x, z) {
+  return makeEnemy(scene, x, z, 'tagger');
+}
+
+// A Rocco runner as an enemy: an east-side runner in orange with a
+// gold chain, already angry — the crew the chases are made of.
+export function makeRival(scene, x, z) {
+  return makeEnemy(scene, x, z, 'rival');
+}
+
+export function isBoss(enemy) {
+  return !!enemy && enemy.variant === 'boss';
+}
+
+export function cashDropFor(enemy) {
+  if (!enemy) return 0;
+  if (enemy.variant === 'boss') return 250;
+  if (enemy.variant === 'fugitive-boss') return 150;
+  if (enemy.variant === 'fugitive-armoured') return 75;
+  if (enemy.variant === 'fugitive') return 50;
+  if (enemy.variant === 'rival') return 25;
+  if (enemy.variant === 'smuggler') return 15;
+  if (enemy.variant === 'tagger') return 20;
+  return 0;
+}
+
 export function updateEnemy(enemy, dt, playerX, playerZ, onEnemyShot) {
   if (!enemy.alive) return;
+  // Surrendered: a fugitive beaten down to a third of their health
+  // stops shooting and stands with their hands up, waiting to be
+  // cuffed. They hold still — the hunt is over, the arrest is not.
+  if (enemy.surrendered) {
+    enemy.mesh.scale.y = 1;
+    return { fired: false };
+  }
   // Ducking: a near miss makes the enemy crouch and hold fire for a bit.
   if (enemy.duckTimer > 0) {
     enemy.duckTimer -= dt;
@@ -117,18 +223,24 @@ export function updateEnemy(enemy, dt, playerX, playerZ, onEnemyShot) {
       : enemy.variant === 'collector' ? rand(1.2, 1.8)
       : enemy.variant === 'guard' ? rand(0.8, 1.3)
       : enemy.variant === 'venn' ? rand(0.5, 0.9)
+      : enemy.variant === 'boss' ? rand(0.5, 0.8)
+      : enemy.variant === 'rival' ? rand(0.7, 1.2)
       : rand(0.9, 1.6);
     enemy.fireTimer = reload;
     // Hit chance falls off with distance; the player can dodge behind cover.
     // Guards are steady shots, Venn barely misses.
     const baseChance = enemy.variant === 'collector' ? 0.68
       : enemy.variant === 'venn' ? 0.72
+      : enemy.variant === 'boss' ? 0.74
       : enemy.variant === 'enforcer' ? 0.6
+      : enemy.variant === 'rival' ? 0.62
       : enemy.variant === 'guard' ? 0.58 : 0.55;
     const hitChance = clamp(baseChance - d * 0.008, 0.12, baseChance);
     if (Math.random() < hitChance && onEnemyShot) {
       const dmg = enemy.variant === 'collector' ? rand(8, 14)
         : enemy.variant === 'venn' ? rand(10, 16)
+        : enemy.variant === 'boss' ? rand(11, 17)
+        : enemy.variant === 'rival' ? rand(6, 12)
         : rand(5, 11);
       onEnemyShot(dmg);
     }
@@ -360,4 +472,21 @@ export function makeHealthPack(scene, x, z) {
   group.position.set(x, 0, z);
   scene.add(group);
   return { mesh: group, x, z, taken: false, respawn: 0 };
+}
+
+// What an enemy says when the fight starts: Rocco's crew talks, Venn's
+// crew never did. The caller toasts it when the crew spawns.
+export const ENEMY_TAUNTS = {
+  rival: ['East side is ours, Voss.', 'Rocco sends his regards.', 'You drive like a tourist, Mara.'],
+  boss: ['The city was mine the day Venn fell.', 'You took my books. Now you pay for them.', 'Nobody outruns Rocco twice.'],
+  crew: ['Venn owns this street.', 'You should have stayed home, Mara.'],
+  enforcer: ['The harbor pays us now.', 'Venn sends his regards.'],
+  guard: ['Private property. Walk away.', 'The terminal is closed tonight.'],
+  venn: ['Fifty thousand, Mara. I always collect.'],
+  collector: ['The deed stays with me.', 'Venn will hear about this.'],
+};
+
+export function enemyTaunt(variant) {
+  const lines = ENEMY_TAUNTS[variant] || ENEMY_TAUNTS.crew;
+  return lines[Math.floor(Math.random() * lines.length)];
 }

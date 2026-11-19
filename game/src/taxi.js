@@ -15,6 +15,7 @@ export const TAXI_RANKS = [
 
 export const VIP_FARE_MIN_REP = 8; // Pro rank unlocks VIP fares
 export const CHAIN_FARE_BONUS = 0.5; // chained fares pay 50% extra
+export const CLUB_VIP_FARE_REP = 5; // Club Neon at rep 5 unlocks VIP fares too
 
 export function makeTaxiCompany() {
   return {
@@ -45,12 +46,20 @@ export function taxiRank(company) {
   return TAXI_RANKS[company.rank];
 }
 
-// Pay for a fare: base pay, rank bonus, VIP multiplier, chain bonus.
-export function taxiFarePay(company, base, vip) {
+// Pay for a fare: base pay, rank bonus, VIP multiplier, chain bonus,
+// and the east-side bonus when the destination is the stadium, the
+// campus or the mall — the long cross-city runs pay 25% extra. Dee the
+// driver on the crew adds another 25%: a pro behind the wheel is worth
+// the tip.
+export function taxiFarePay(company, base, vip, destKey, driver) {
   const rank = taxiRank(company);
   let pay = base * (1 + rank.payBonus);
   if (vip) pay *= 1.8;
   if (company.chain > 0) pay *= 1 + CHAIN_FARE_BONUS;
+  if (destKey && TAXI_EAST_DESTINATIONS.includes(destKey)) pay *= 1 + TAXI_EAST_BONUS;
+  if (destKey && TAXI_BOUNTY_DESTINATIONS.includes(destKey)) pay *= 1 + TAXI_BOUNTY_BONUS;
+  if (destKey && TAXI_MURAL_DESTINATIONS.includes(destKey)) pay *= 1 + TAXI_MURAL_BONUS;
+  if (driver) pay *= 1.25;
   return Math.round(pay);
 }
 
@@ -81,18 +90,36 @@ export function breakTaxiChain(company) {
 
 // VIP fares are offered by the dispatcher: a timed trip for a guest
 // who pays nearly double. Only from Pro rank up, and only about one
-// fare in three, so they stay special.
-export function rollVipFare(company, rng) {
-  if (company.rep < VIP_FARE_MIN_REP) return false;
+// fare in three, so they stay special. A club with a name helps too:
+// Club Neon at reputation 5 puts Mara on the VIP list on its own.
+export function rollVipFare(company, rng, clubRep) {
+  if (company.rep < VIP_FARE_MIN_REP && (clubRep || 0) < CLUB_VIP_FARE_REP) return false;
   return rng() < 0.34;
 }
 
+// East Solmar pays extra: every trip to the stadium, the campus or the
+// mall is a long cross-city run, so the meter runs 25% hotter there.
+export const TAXI_EAST_DESTINATIONS = ['stadium', 'campus', 'mall'];
+export const TAXI_EAST_BONUS = 0.25;
+// Fares to the fugitives' hideouts pay danger money: the back alley,
+// the harbor and the freight yard are not safe streets after dark.
+export const TAXI_BOUNTY_DESTINATIONS = ['backalley', 'harbor', 'freight'];
+export const TAXI_BOUNTY_BONUS = 0.15;
+// Fares to Mural Row pay for the view: tourists ride out to watch the
+// walls go up, and they tip for the colour.
+export const TAXI_MURAL_DESTINATIONS = ['mural-row'];
+export const TAXI_MURAL_BONUS = 0.2;
+
 // Pick a destination for a company fare. VIP guests always want the
-// resort or the airport — the two places that pay the most.
+// resort or the airport — the two places that pay the most — and since
+// the club opened, the neon door too. The regular list covers the
+// whole city, east side included; 'docks' used to sit here, but there
+// is no such place in Solmar — the dockside is water, and no taxi
+// drives there.
 export function companyFareDestination(rng, vip) {
   const keys = vip
-    ? ['resort', 'airport', 'terminal']
-    : ['resort', 'airport', 'terminal', 'plaza', 'marina', 'cafe', 'mall', 'harbor', 'docks'];
+    ? ['resort', 'airport', 'terminal', 'nightclub']
+    : ['resort', 'airport', 'terminal', 'plaza', 'marina', 'cafe', 'mall', 'harbor', 'stadium', 'campus', 'nightclub', 'mural-row'];
   const key = keys[Math.floor(rng() * keys.length)];
   return { key, place: PLACES[key] };
 }
@@ -119,4 +146,18 @@ export function taxiChainText(company) {
   if (company.chain <= 0) return 'No chain — finish a fare to start one.';
   const bonus = Math.round(CHAIN_FARE_BONUS * 100);
   return `Chain x${company.chain}: the next fare pays +${bonus}% on top of the rank bonus.`;
+}
+
+// A fare that ends at the garage pays a 10% tip: the rider is usually
+// a job client, and job clients tip the driver who brings them home.
+export const TAXI_JOB_BONUS = 0.1;
+export function taxiJobBonusPay(pay) {
+  return Math.round(pay * TAXI_JOB_BONUS);
+}
+
+// A night fare pays 15% more: the meter runs hot after dark, and the
+// passengers who ride at 2 a.m. tip like it.
+export const TAXI_NIGHT_BONUS = 0.15;
+export function taxiNightBonusPay(pay) {
+  return Math.round(pay * TAXI_NIGHT_BONUS);
 }

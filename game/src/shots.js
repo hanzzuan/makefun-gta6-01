@@ -1,9 +1,9 @@
 // shots.js — deterministic scene presets for the entry's screenshots.
 // ?shot=chase | drive | city | mission starts the game already playing
-// in a staged moment: the cover shot is a five-star chase with the
-// police helicopter overhead, the HUD and the minimap all on screen.
-// Nothing here edits pixels; the screenshots are real renders of the
-// running game.
+// in a staged moment: the cover shot is a five-star chase down the East
+// Solmar avenue with the police helicopter overhead, the HUD and the
+// minimap all on screen. Nothing here edits pixels; the screenshots are
+// real renders of the running game.
 //
 // Each preset is one entry in SHOT_DEFS: a label for the dossier and a
 // setup(game) that stages the world and leaves it running. The registry
@@ -12,10 +12,10 @@
 
 import { PLACES } from './city.js';
 import { makeCar } from './cars.js';
-import { makeEnemy } from './combat.js';
+import { makeEnemy, makeTagger, makeRival } from './combat.js';
 import { spawnRoadblock } from './police.js';
 
-export const SHOT_NAMES = ['chase', 'drive', 'city', 'mission'];
+export const SHOT_NAMES = ['chase', 'drive', 'city', 'mission', 'casino', 'club', 'bounty', 'graffiti'];
 
 // Shared staging: put Mara in a car, hide her on-foot mesh, and hand
 // the wheel to the loop. Every driving preset uses this so the car
@@ -45,16 +45,114 @@ function stageOnFoot(game, x, z, heading) {
 }
 
 const SHOT_DEFS = {
-  chase: {
-    label: 'Five-star chase: the PD helicopter overhead, roadblock ahead',
+  casino: {
+    label: 'The Long Con: Mara clears Rocco\u2019s vault guards from the casino floor at the Palmera Resort',
     setup(game) {
-      // Mara in a red Comet GT on the central avenue, five stars, the
-      // chopper pinning its searchlight on her and interceptors closing
-      // in from the flanks. Rain is falling and the PD has thrown up a
-      // roadblock on the avenue ahead of her.
-      const car = makeCar('car', 35, 120, Math.PI, 0xd8382e);
+      // Mission 13: Mara on foot at the casino door at night, pistol
+      // out, Rocco's vault guards in orange closing in across the
+      // resort forecourt, the gold casino sign glowing behind her and
+      // two stars on the board. She stands south of the door facing
+      // north (heading PI), close enough that the guards read clearly.
+      const { player } = game;
+      stageOnFoot(game, -128, 238, Math.PI);
+      player.weapon = 'pistol';
+      game.wanted.heat = 14;
+      game.wanted.level = 2;
+      const spots = [
+        [-138, 216], [-118, 214], [-134, 228], [-122, 230],
+      ];
+      for (const [ex, ez] of spots) {
+        const e = makeRival(game.scene, ex, ez);
+        game.enemies.push(e);
+      }
+    },
+  },
+  graffiti: {
+    label: 'Street Legend: Mara finishes a wall on Mural Row at golden hour, spray can in hand, the taggers watching',
+    setup(game) {
+      // Mural Row at golden hour: Mara on foot at the long blank wall
+      // downtown, spray can in hand, two taggers in purple hoodies
+      // watching from the kerb. She stands south of the wall facing
+      // north (heading PI), close enough that the wall reads clearly.
+      const { player } = game;
+      stageOnFoot(game, -100, -40, Math.PI);
+      player.weapon = 'pistol';
+      game.wanted.heat = 0;
+      game.wanted.level = 0;
+      const spots = [
+        [-106, -34], [-94, -34],
+      ];
+      for (const [ex, ez] of spots) {
+        const e = makeTagger(game.scene, ex, ez);
+        game.enemies.push(e);
+      }
+    },
+  },
+  club: {
+    label: 'Night Shift: Mara takes Club Neon back, pistol out, the bouncers closing in under the neon sign',
+    setup(game) {
+      // Mission 15: Mara on foot at the club door at night, pistol out,
+      // Venn's bouncers in black vests closing in across the pavement,
+      // the pink neon sign glowing behind her and two stars on the
+      // board. She stands south of the door facing north (heading PI),
+      // close enough that the bouncers read clearly.
+      const { player } = game;
+      stageOnFoot(game, -70, -56, Math.PI);
+      player.weapon = 'pistol';
+      game.wanted.heat = 14;
+      game.wanted.level = 2;
+      const spots = [
+        [-76, -66], [-64, -66], [-76, -76], [-64, -76],
+      ];
+      for (const [ex, ez] of spots) {
+        const e = makeEnemy(game.scene, ex, ez, 'bouncer');
+        game.enemies.push(e);
+      }
+      game.city.setWeather('clear');
+      game.city.setTimeOfDay(0.9);
+      game.missions.index = 14;
+      game.missions.stage = 1;
+    },
+  },
+  bounty: {
+    label: 'Bounty hunt: Mara corners the Ghost of Solmar in the back alley at night, pistol out, three stars on the board',
+    setup(game) {
+      // The wanted board's biggest name: Mara on foot in the back
+      // alley at night, pistol out, the Ghost's fugitives in dusty
+      // grey-green closing in between the food carts, three stars on
+      // the board. She stands at the alley mouth facing in (heading
+      // -PI/2), close enough that the fugitives read clearly.
+      const { player } = game;
+      stageOnFoot(game, -40, -28, -Math.PI / 2);
+      player.weapon = 'pistol';
+      game.wanted.heat = 21;
+      game.wanted.level = 3;
+      const spots = [
+        [-46, -40], [-34, -40], [-46, -48], [-34, -48],
+      ];
+      for (const [ex, ez] of spots) {
+        const e = makeEnemy(game.scene, ex, ez, 'fugitive');
+        game.enemies.push(e);
+      }
+      game.city.setWeather('clear');
+      game.city.setTimeOfDay(0.92);
+      game.missions.index = 32;
+      game.missions.stage = 1;
+    },
+  },
+  chase: {
+    label: 'Five-star chase down the East Solmar avenue: the PD helicopter overhead, roadblock ahead',
+    setup(game) {
+      // Mara in a red Comet GT on the East Solmar avenue just south of
+      // the stadium gate, five stars, heading south down the clear run
+      // toward the mall. The chopper pins its searchlight on her and
+      // interceptors close in from the flanks. Rain is falling and the
+      // PD has thrown up a roadblock on the avenue ahead of her, short
+      // of the mall fountain.
+      const car = makeCar('car', 315, -10, 0, 0xd8382e);
       car.name = 'Comet GT';
       stageInCar(game, car);
+      car.speed = 14;
       const { wanted } = game;
       wanted.heat = 135;
       wanted.level = 5;
@@ -72,98 +170,100 @@ const SHOT_DEFS = {
       // the loop keeps them there so the cover always shows the chase.
       game.policeFormation = [[-8, 18], [8, 24], [0, 32]];
       game.police.forEach((p) => {
-        p.heading = Math.PI;
+        p.heading = 0;
         p.speed = 26;
       });
       game.city.setWeather('rain');
       game.city.setTimeOfDay(0.74);
-      game.roadblocks.push(spawnRoadblock(game.scene, 35, 58, Math.PI, game.colliders));
-      game.missions.index = 5;
+      game.roadblocks.push(spawnRoadblock(game.scene, 315, 28, 0, game.colliders));
+      game.missions.index = 8;
       game.missions.stage = 1;
     },
   },
   drive: {
-    label: 'Night cab shift in the new South district, past the airport',
+    label: 'Dusk drive up the East Solmar avenue in the sports coupe, past the campus and the mall',
     setup(game) {
-      // A night shift in a yellow cab: Mara working the south avenue
-      // after dark, the terminal and the control tower lit behind her,
-      // a plane parked on the apron, traffic ahead.
-      const car = makeCar('taxi', 70, 245, Math.PI / 2);
-      car.name = 'City Cab';
-      car.speed = 16;
+      // A dusk run in the orange sports coupe: Mara heading north up
+      // the East Solmar avenue from the campus, the library and the
+      // mall ahead of her, the city bus ahead on the same avenue.
+      const car = makeCar('coupe', 315, 165, Math.PI);
+      car.name = 'Veloce Coupe';
       stageInCar(game, car);
+      car.speed = 12;
       game.wanted.heat = 0;
       game.wanted.level = 0;
       // A fresh story state, whatever the browser saved before.
       game.missions.index = 0;
       game.missions.stage = 0;
       game.city.setWeather('clear');
-      game.city.setTimeOfDay(0.97);
-      // A car ahead on the same avenue so the shot shows traffic.
-      const ahead = makeCar('car', 140, 245, Math.PI / 2, 0xf2c230);
-      ahead.targetSpeed = 12;
-      ahead.vertical = false;
-      ahead.lane = 245;
-      ahead.along = 140;
-      ahead.direction = 1;
-      game.scene.add(ahead.mesh);
-      game.traffic.push(ahead);
+      game.city.setTimeOfDay(0.82);
+      // The city bus ahead on the same avenue so the shot shows the
+      // east-side traffic.
+      const bus = makeCar('bus', 315, 140, Math.PI);
+      bus.targetSpeed = 10;
+      bus.vertical = true;
+      bus.lane = 315;
+      bus.along = 140;
+      bus.direction = -1;
+      game.scene.add(bus.mesh);
+      game.traffic.push(bus);
     },
   },
   city: {
-    label: 'On foot at the Palmera Resort in the South district, golden hour',
+    label: 'The showroom at Venn\u2019s Garage — Mara\u2019s rare-car collection at golden hour',
     setup(game) {
-      // On foot at the Palmera Resort at golden hour: Mara mid-frame
-      // facing the pool, the cabanas and the hotel towers ahead of her,
-      // resort guests on the deck. She stands at the pool's north edge
-      // facing south (heading 0), close enough that the pool, the
-      // cabanas and the guests all read in one frame.
-      stageOnFoot(game, -140, 218, 0);
-      // Bring a few resort guests into the frame ahead of her.
-      const nearSpots = [[-152, 228], [-132, 232], [-118, 244]];
-      nearSpots.forEach(([sx, sz], i) => {
-        const ped = game.peds[i * 2];
-        if (!ped) return;
-        ped.x = sx;
-        ped.z = sz;
-        ped.mesh.position.set(sx, 0, sz);
-      });
+      // On foot south of the garage at golden hour, facing north into
+      // the showroom: three rares parked in a row by the door — the
+      // gold coupe, the rally fox and the vintage roadster — with the
+      // gold showroom board glowing over the garage door behind them.
+      stageOnFoot(game, 140, -112, Math.PI);
+      const rares = [
+        ['coupe', 128, -126, 0xd8a920],
+        ['coupe', 140, -126, 0x2e7a4a],
+        ['coupe', 152, -126, 0x8a5a3c],
+      ];
+      for (const [kind, x, z, color] of rares) {
+        const car = makeCar(kind, x, z, Math.PI, color);
+        car.targetSpeed = 0;
+        game.scene.add(car.mesh);
+        game.traffic.push(car);
+      }
       game.wanted.heat = 0;
       game.wanted.level = 0;
-      game.missions.index = 5;
+      game.missions.index = 19;
       game.missions.stage = 0;
       game.city.setWeather('clear');
       game.city.setTimeOfDay(0.72);
     },
   },
   mission: {
-    label: 'Southern Comfort: Mara faces Venn\u2019s resort guards by the pool',
+    label: 'The Lighthouse: Mara signals Leo\u2019s old crew from the dockside pier at night — mission 19 of twenty',
     setup(game) {
-      // Mission 6: Mara at the Palmera Resort, pistol out, Venn's
-      // guards in the open by the pool ahead of her, the hotel towers
-      // and the cabanas behind them. She stands at the pool's north
-      // edge facing south (heading 0), close enough that the guards
-      // read clearly, clear of the palm at (-140, 186).
+      // Mission 19: Mara on the dockside pier at night, pistol out,
+      // Venn's smugglers closing in across the pier, the lighthouse
+      // beam sweeping the bay behind her and the marina lights across
+      // the water. She stands east of the pier facing west toward the
+      // lighthouse (heading -PI/2), close enough that the smugglers
+      // read clearly.
       const { player } = game;
-      stageOnFoot(game, -140, 210, 0);
+      stageOnFoot(game, -318, -196, -Math.PI / 2);
       player.weapon = 'pistol';
       game.wanted.heat = 28;
       game.wanted.level = 1;
-      game.missions.index = 5;
-      game.missions.stage = 1;
+      game.missions.index = 18;
+      game.missions.stage = 2;
       game.enemies.length = 0;
       const spots = [
-        [PLACES.resort.x - 18, PLACES.resort.z + 16],
-        [PLACES.resort.x - 4, PLACES.resort.z + 20],
-        [PLACES.resort.x + 12, PLACES.resort.z + 12],
-        [PLACES.resort.x + 20, PLACES.resort.z + 22],
+        [-330, -204, 'rival'],
+        [-330, -196, 'rival'],
+        [-328, -188, 'rival'],
       ];
-      for (const [ex, ez] of spots) {
-        const enemy = makeEnemy(game.scene, ex, ez, 'guard');
+      for (const [ex, ez, variant] of spots) {
+        const enemy = makeEnemy(game.scene, ex, ez, variant);
         game.enemies.push(enemy);
       }
       game.city.setWeather('clear');
-      game.city.setTimeOfDay(0.74);
+      game.city.setTimeOfDay(0.95);
     },
   },
 };

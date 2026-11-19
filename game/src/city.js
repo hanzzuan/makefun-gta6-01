@@ -4,8 +4,9 @@
 // Exports the road network and building colliders the other systems use.
 
 import * as THREE from 'three';
-import { mulberry32, clamp } from './util.js';
+import { mulberry32, clamp, dist2D } from './util.js';
 import { buildSouth } from './south.js';
+import { buildEast, onEastRoad } from './east.js';
 
 export const CITY_HALF = 280; // playable city extends -280..280 on x and z
 export const ROAD_SPACING = 70;
@@ -20,17 +21,39 @@ export const PLACES = {
   warehouse: { x: -140, z: -140, name: 'Sunset Warehouse' },
   cafe: { x: 70, z: 140, name: 'Caf\u00e9 Lumen' },
   tower: { x: 70, z: -70, name: 'Solmar Tower' },
+  office: { x: 84, z: -84, name: 'Venn\u2019s Office' },
   boardwalk: { x: -252, z: 0, name: 'Boardwalk' },
   harbor: { x: 210, z: -210, name: 'North Harbor' },
   cannery: { x: 140, z: -210, name: 'Solmar Cannery' },
   freight: { x: 210, z: -140, name: 'Freight Yard' },
-  dockside: { x: -320, z: -210, name: 'Dockside Pier' },
+  dockside: { x: -320, z: -210, name: 'Dockside Pier', water: true },
   // South Solmar: the beach resort and the airport, built by south.js.
   resort: { x: -140, z: 210, name: 'Palmera Resort' },
+  casino: { x: -128, z: 224, name: 'Solmar Casino' },
   airport: { x: 140, z: 215, name: 'Solmar Airport' },
   terminal: { x: 210, z: 215, name: 'Solmar Terminal' },
   control: { x: 70, z: 215, name: 'Control Tower' },
   runway: { x: 120, z: 272, name: 'Runway 27' },
+  // East Solmar: the university, the stadium and the mall, built by east.js.
+  campus: { x: 320, z: 140, name: 'Solmar University' },
+  stadium: { x: 320, z: -70, name: 'Solmar Stadium' },
+  mall: { x: 320, z: 70, name: 'Solmar Mall' },
+  // Downtown after dark: Club Neon, Venn's old nightclub, at the
+  // corner where the plaza meets the tower avenue — and Neon Alley
+  // behind it, where the club crowd spills out and the food carts
+  // never close. The back alley is where Silk runs her card games,
+  // and where the PD's wanted board sends Mara first.
+  nightclub: { x: -70, z: -70, name: 'Club Neon' },
+  'neon-alley': { x: -40, z: -70, name: 'Neon Alley' },
+  backalley: { x: -40, z: -40, name: 'Back Alley' },
+  // Mural Row: the long blank wall downtown, where the city's street
+  // artists work — twelve walls, one per piece, and a gold can waiting
+  // for whoever finishes them all.
+  'mural-row': { x: -100, z: -40, name: 'Mural Row' },
+  // The boat run: two buoys on the bay, west of the beach. Marked
+  // water so taxi fares never send a passenger out to sea.
+  buoy: { x: -380, z: -210, name: 'Lighthouse Buoy', water: true },
+  buoySouth: { x: -360, z: 180, name: 'Harbor Mouth Buoy', water: true },
 };
 
 function makeWindowTexture(rng, warm) {
@@ -832,6 +855,11 @@ export function buildCity(scene) {
   // 26 m of the new PLACES), so the district is built by hand here.
   const south = buildSouth(scene, colliders);
 
+  // East Solmar: the university, the stadium and the mall, past the
+  // last avenue to the east. Same pattern: the district module builds
+  // it by hand and keeps its own animation handles.
+  const east = buildEast(scene, colliders);
+
   return {
     colliders,
     avenues,
@@ -914,6 +942,10 @@ export function buildCity(scene) {
       // South Solmar keeps moving too: the tower radar sweeps, the
       // runway lights breathe at night, and a jet taxis the strip.
       south.update(dt, time, night > 0.6);
+      // East Solmar keeps moving too: the scoreboard pulses, the
+      // floodlights and the mall sign come on after dark, and the clock
+      // tower's minute hand turns with the game clock.
+      east.update(dt, time, night > 0.6);
       // Rain falls and wraps inside its box, centred on the player.
       if (rainLevel > 0.02) {
         rain.visible = true;
@@ -933,6 +965,24 @@ export function buildCity(scene) {
 }
 
 // Is a point inside any building collider (with a radius margin)?
+// The nearest named place to (x, z): the place object and the
+// distance in metres. The hint line uses it so the player always
+// knows what part of Solmar they are standing in.
+export function nearestPlace(x, z) {
+  let best = null;
+  let bestD = Infinity;
+  for (const key of Object.keys(PLACES)) {
+    const place = PLACES[key];
+    if (place.water) continue;
+    const d = dist2D(x, z, place.x, place.z);
+    if (d < bestD) {
+      bestD = d;
+      best = place;
+    }
+  }
+  return { place: best, distance: Math.round(bestD) };
+}
+
 export function hitsBuilding(colliders, x, z, radius) {
   for (const c of colliders) {
     if (x > c.minX - radius && x < c.maxX + radius && z > c.minZ - radius && z < c.maxZ + radius) {
@@ -942,13 +992,14 @@ export function hitsBuilding(colliders, x, z, radius) {
   return false;
 }
 
-// Is the point on a road (within half the road width of an avenue/street)?
+// Is the point on a road (within half the road width of an avenue/street,
+// or on the east avenue and streets of East Solmar)?
 export function onRoad(x, z) {
   for (let v = -CITY_HALF + 35; v <= CITY_HALF - 35; v += ROAD_SPACING) {
     if (Math.abs(x - v) < ROAD_WIDTH / 2 + 1.5) return true;
     if (Math.abs(z - v) < ROAD_WIDTH / 2 + 1.5) return true;
   }
-  return false;
+  return onEastRoad(x, z);
 }
 
 // Pick a random point on the road network.
@@ -963,9 +1014,22 @@ export function randomRoadPoint() {
 
 export function clampToCity(x, z) {
   // The west edge reaches past the beach into the shallows, so Mara can
-  // wade out to the dockside pier; everywhere else the city bounds hold.
+  // wade out to the dockside pier; the east edge reaches past the last
+  // avenue into East Solmar, so she can drive to the campus, the
+  // stadium and the mall. Everywhere else the city bounds hold.
   return {
-    x: clamp(x, -CITY_HALF - 50, CITY_HALF + 20),
+    x: clamp(x, -CITY_HALF - 50, CITY_HALF + 100),
     z: clamp(z, -CITY_HALF - 20, CITY_HALF + 20),
   };
 }
+
+// The showroom row at Venn's Garage: six bays, one per rare car,
+// facing the street so the collection reads from the avenue.
+export const SHOWROOM_SPOTS = [
+  { x: 120, z: -132 }, { x: 124, z: -132 }, { x: 128, z: -132 },
+  { x: 132, z: -132 }, { x: 136, z: -132 }, { x: 140, z: -132 },
+];
+
+// The lighthouse itself: the tower at the end of the dockside pier,
+// where the signal lamp sweeps the bay all night.
+export const LIGHTHOUSE_SPOT = { x: -352, z: -210, name: 'Solmar Lighthouse' };

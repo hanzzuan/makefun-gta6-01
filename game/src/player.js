@@ -5,6 +5,10 @@ import * as THREE from 'three';
 import { clamp, lerpAngle, rand } from './util.js';
 import { hitsBuilding, clampToCity } from './city.js';
 
+// Sprint stamina comes back at this rate while Mara walks: ten points
+// a second, so a full sprint takes ten seconds to recover from.
+export const STAMINA_REGEN_PER_SECOND = 10;
+
 // Mara: a simple stylised figure — jacket, jeans, hair, built from boxes.
 export function buildPlayerMesh() {
   const group = new THREE.Group();
@@ -49,8 +53,23 @@ export function buildPlayerMesh() {
   gun.position.set(0.42, 0.95, 0.28);
   gun.visible = false;
   group.add(gun);
-  group.userData = { legL, legR, armL, armR, gun, torso };
+  // A spray can in the right hand for the walls: gold, with a black
+  // cap, hidden until Mara is spraying.
+  const can = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.06, 0.06, 0.28, 8),
+    new THREE.MeshStandardMaterial({ color: 0xffc300, roughness: 0.4, metalness: 0.5 }),
+  );
+  can.position.set(0.42, 0.95, 0.28);
+  can.visible = false;
+  group.add(can);
+  group.userData = { legL, legR, armL, armR, gun, torso, can };
   return group;
+}
+
+// Show or hide the spray can in Mara's hand while she works a wall.
+export function setSpraying(player, on) {
+  const can = player && player.userData && player.userData.can;
+  if (can) can.visible = !!on;
 }
 
 export function makePlayer(x, z) {
@@ -67,10 +86,13 @@ export function makePlayer(x, z) {
     weapon: 'fists', // 'fists' | 'pistol'
     ammo: 24,
     inCar: null,
+    inBoat: null, // the boat Mara is driving, or null when on land
     personalRide: null, // Mara's tuned Comet GT at the safehouse, or null
     walkPhase: 0,
     stamina: 100,
     maxStamina: 100,
+    adrenaline: false, // true while a bounty hunt is running: the chase keeps Mara moving
+    swimStamina: 100, // swimming in deep water drains this, not the sprint bar
     sneaking: false,
   };
 }
@@ -105,9 +127,19 @@ export function updatePlayerOnFoot(player, axes, dt, running, cameraHeading, col
     const wantHeading = Math.atan2(mx / len, mz / len);
     player.heading = lerpAngle(player.heading, wantHeading, Math.min(1, dt * 12));
     speed = targetSpeed;
-    // Wading into the ocean past the beach slows Mara to a waist-deep walk.
+    // The bay: waist-deep wading in the shallows, and a proper swim in
+    // the deep water past the pier. Swimming is steady but it drains a
+    // separate swim stamina — step off a boat far from shore and the
+    // swim home is a real effort.
     const inWater = player.x < -308;
-    if (inWater) speed *= 0.5;
+    const inDeepWater = player.x < -322;
+    if (inDeepWater) {
+      speed = player.swimStamina > 0 ? 2.8 : 1.4;
+      player.swimming = true;
+    } else {
+      player.swimming = false;
+      if (inWater) speed *= 0.5;
+    }
     const nx = player.x + Math.sin(player.heading) * speed * dt;
     const nz = player.z + Math.cos(player.heading) * speed * dt;
     if (!hitsBuilding(colliders, nx, nz, 0.7)) {
@@ -119,21 +151,38 @@ export function updatePlayerOnFoot(player, axes, dt, running, cameraHeading, col
   }
   player.speed = speed;
   // Stamina: sprinting drains it, walking or standing brings it back.
+  // Swimming drains the swim bar instead; it refills on dry land.
+  if (player.swimming && moving) {
+    player.swimStamina = Math.max(0, player.swimStamina - 6 * dt);
+  } else if (!player.swimming) {
+    player.swimStamina = Math.min(100, player.swimStamina + 12 * dt);
+  }
   if (running && moving) {
     player.stamina = Math.max(0, player.stamina - 14 * dt);
+  } else if (moving) {
+    // Adrenaline: a hunt on the board makes the stamina come back
+    // half again as fast — the chase keeps Mara moving.
+    const regen = STAMINA_REGEN_PER_SECOND * (player.adrenaline ? 1.5 : 1);
+    player.stamina = Math.min(player.maxStamina, player.stamina + regen * dt);
   } else {
-    player.stamina = Math.min(player.maxStamina, player.stamina + 10 * dt);
+    player.stamina = Math.min(player.maxStamina, player.stamina + STAMINA_REGEN_PER_SECOND * dt);
   }
-  // Waist-deep in the shallows past the beach.
-  player.mesh.position.set(player.x, player.x < -308 ? -0.35 : 0, player.z);
+  // Waist-deep in the shallows past the beach, chest-deep when swimming.
+  player.mesh.position.set(player.x, player.x < -322 ? -0.55 : player.x < -308 ? -0.35 : 0, player.z);
   player.mesh.rotation.y = player.heading;
-  // Walk swing on the limbs.
+  // Walk swing on the limbs — or a swim stroke when in deep water.
   const swing = moving ? Math.sin(player.walkPhase) * 0.55 : 0;
   const u = player.mesh.userData;
   u.legL.rotation.x = swing;
   u.legR.rotation.x = -swing;
-  u.armL.rotation.x = -swing * 0.8;
-  u.armR.rotation.x = swing * 0.8;
+  if (player.swimming) {
+    // Arms up and paddling: the stroke that gets Mara home.
+    u.armL.rotation.x = -2.2 + Math.sin(player.walkPhase * 1.4) * 0.4;
+    u.armR.rotation.x = -2.2 - Math.sin(player.walkPhase * 1.4) * 0.4;
+  } else {
+    u.armL.rotation.x = -swing * 0.8;
+    u.armR.rotation.x = swing * 0.8;
+  }
   u.gun.visible = player.weapon === 'pistol';
   return speed;
 }
@@ -173,5 +222,17 @@ export function playerDisplayName() {
 }
 
 export function randomSpawn() {
-  return { x: -70 + rand(-4, 4), z: 148 + rand(-4, 4) };
+  // Fresh starts vary: half the time Mara wakes up at the garage,
+  // half the time at the marina — the city looks different from the
+  // water, and the first job is never far from either.
+  if (Math.random() < 0.5) return { x: -70 + rand(-4, 4), z: 148 + rand(-4, 4) };
+  return { x: -238 + rand(-4, 4), z: 175 + rand(-4, 4) };
+}
+
+// Fast travel drops Mara on her feet: clamp the landing spot inside
+// the city so a stop near the edge never leaves her in the bay.
+export function clampPlayerToCity(player) {
+  if (!player) return;
+  player.x = Math.min(360, Math.max(-360, player.x));
+  player.z = Math.min(280, Math.max(-280, player.z));
 }

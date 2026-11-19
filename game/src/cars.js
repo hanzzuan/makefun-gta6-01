@@ -17,6 +17,8 @@ const CAR_NAMES = [
 const TAXI_NAMES = ['City Cab', 'Sunset Taxi', 'Harbor Cab'];
 const TRUCK_NAMES = ['Harbor Hauler', 'Dock Runner', 'Freight Mule'];
 const BIKE_NAMES = ['Street Hawk', 'Night Wasp', 'Coast Runner'];
+const COUPE_NAMES = ['Comet GT-R', 'Sunset Stingray', 'Coral Viper'];
+const PICKUP_NAMES = ['Harbor Hauler', 'Desert Mule', 'Coast Ranger'];
 
 // A car is a group: body, cabin, wheels, headlights, taillights.
 export function buildCarMesh(color, kind) {
@@ -32,12 +34,16 @@ export function buildCarMesh(color, kind) {
   });
   const isVan = kind === 'van';
   const isPolice = kind === 'police';
+  const isInterceptor = kind === 'interceptor'; // the black five-star unit: same light bar, darker paint, faster engine
   const isBike = kind === 'motorcycle';
   const isTruck = kind === 'truck';
   const isTaxi = kind === 'taxi';
   const isLimo = kind === 'limo';
-  const bodyLen = isBike ? 2.3 : isTruck ? 6.0 : isVan ? 5.2 : isLimo ? 6.8 : 4.4;
-  const bodyW = isBike ? 0.8 : isTruck ? 2.4 : isVan ? 2.2 : 2.0;
+  const isBus = kind === 'bus';
+  const isCoupe = kind === 'coupe';
+  const isPickup = kind === 'pickup';
+  const bodyLen = isBike ? 2.3 : isBus ? 9.5 : isTruck ? 6.0 : isVan ? 5.2 : isLimo ? 6.8 : isPickup ? 5.4 : 4.4;
+  const bodyW = isBike ? 0.8 : isBus ? 2.6 : isTruck ? 2.4 : isVan ? 2.2 : 2.0;
   const body = new THREE.Mesh(new THREE.BoxGeometry(bodyW, 0.85, bodyLen), bodyMat);
   body.position.y = 0.75;
   body.castShadow = true;
@@ -94,6 +100,60 @@ export function buildCarMesh(color, kind) {
     );
     divider.position.set(0, 1.62, 0.4);
     group.add(divider);
+  } else if (isBus) {
+    // The city bus: a long body with a band of passenger windows and a
+    // route sign on the roof, so it reads as a bus from a block away.
+    const windows = new THREE.Mesh(
+      new THREE.BoxGeometry(bodyW * 0.92, 0.9, 7.6),
+      new THREE.MeshStandardMaterial({ color: 0x9fd8e8, roughness: 0.15, metalness: 0.5 }),
+    );
+    windows.position.set(0, 1.7, 0);
+    windows.castShadow = true;
+    group.add(windows);
+    const roofSign = new THREE.Mesh(
+      new THREE.BoxGeometry(1.6, 0.4, 0.8),
+      new THREE.MeshBasicMaterial({ color: 0xffe14a }),
+    );
+    roofSign.position.set(0, 2.45, 3.6);
+    group.add(roofSign);
+  } else if (isCoupe) {
+    // A sports coupe: a low sleek cabin set back on the body, and a
+    // spoiler on the tail — the fastest street car in Solmar.
+    const cabin = new THREE.Mesh(
+      new THREE.BoxGeometry(bodyW * 0.8, 0.6, 1.8),
+      glassMat,
+    );
+    cabin.position.set(0, 1.35, -0.4);
+    cabin.castShadow = true;
+    group.add(cabin);
+    const spoiler = new THREE.Mesh(
+      new THREE.BoxGeometry(bodyW * 0.95, 0.1, 0.5),
+      new THREE.MeshStandardMaterial({ color: 0x1a1a1e, roughness: 0.4, metalness: 0.6 }),
+    );
+    spoiler.position.set(0, 1.25, -2.1);
+    group.add(spoiler);
+  } else if (isPickup) {
+    // A pickup: a cab up front and an open bed behind it, with a
+    // toolbox across the bed — the harbor's workhorse.
+    const cab = new THREE.Mesh(
+      new THREE.BoxGeometry(bodyW * 0.88, 1.1, 1.7),
+      glassMat,
+    );
+    cab.position.set(0, 1.5, 1.4);
+    cab.castShadow = true;
+    group.add(cab);
+    const bedWall = new THREE.Mesh(
+      new THREE.BoxGeometry(bodyW, 0.7, 0.2),
+      bodyMat,
+    );
+    bedWall.position.set(0, 1.35, -2.5);
+    group.add(bedWall);
+    const toolbox = new THREE.Mesh(
+      new THREE.BoxGeometry(1.4, 0.6, 0.6),
+      new THREE.MeshStandardMaterial({ color: 0x3a3a42, roughness: 0.6, metalness: 0.5 }),
+    );
+    toolbox.position.set(0, 1.45, -1.2);
+    group.add(toolbox);
   } else {
     const cabin = new THREE.Mesh(
       new THREE.BoxGeometry(bodyW * 0.86, 0.75, isVan ? 3.4 : 2.1),
@@ -118,7 +178,7 @@ export function buildCarMesh(color, kind) {
     checker.position.set(0, 1.92, -0.2);
     group.add(checker);
   }
-  if (isPolice) {
+  if (isPolice || isInterceptor) {
     const bar = new THREE.Mesh(
       new THREE.BoxGeometry(1.1, 0.28, 0.5),
       new THREE.MeshStandardMaterial({ color: 0x222226, roughness: 0.4 }),
@@ -142,10 +202,12 @@ export function buildCarMesh(color, kind) {
   const wheelGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.32, 12);
   const wheelMat = new THREE.MeshStandardMaterial({ color: 0x14141a, roughness: 0.9 });
   const wheels = [];
-  // Motorcycles run two wheels in line; trucks run six; limos stretch
-  // theirs to the ends of the long body; everything else four.
+  // Motorcycles run two wheels in line; trucks and buses run six;
+  // limos stretch theirs to the ends of the long body; everything else four.
   const wheelSpots = isBike
     ? [[0, 0.85], [0, -0.85]]
+    : isBus
+      ? [[-1.2, 3.6], [1.2, 3.6], [-1.2, 0], [1.2, 0], [-1.2, -3.6], [1.2, -3.6]]
     : isTruck
       ? [[-1.05, 2.2], [1.05, 2.2], [-1.05, 0], [1.05, 0], [-1.05, -2.2], [1.05, -2.2]]
       : isLimo
@@ -187,22 +249,35 @@ export function updateCarLights(car, night) {
 }
 
 export function makeCar(kind, x, z, heading, color) {
-  const paint = kind === 'police' ? 0xf2f2f2
+  const paint = kind === 'interceptor' ? 0x14141a
+    : kind === 'police' ? 0xf2f2f2
     : kind === 'taxi' ? 0xf2c230
+    : kind === 'bus' ? 0x2e6a8a
+    : kind === 'limo' ? 0x14141a
+    : kind === 'sprayvan' ? 0xffc300 // the Mural Row supply van, gold as a fresh tag
     : (color ?? pick(CAR_COLORS));
   const mesh = buildCarMesh(paint, kind);
   mesh.position.set(x, 0, z);
   mesh.rotation.y = heading;
-  const name = kind === 'police' ? 'Solmar PD Interceptor'
+  const name = kind === 'interceptor' ? 'Solmar PD Black Interceptor'
+    : kind === 'police' ? 'Solmar PD Interceptor'
     : kind === 'taxi' ? pick(TAXI_NAMES)
     : kind === 'truck' ? pick(TRUCK_NAMES)
     : kind === 'motorcycle' ? pick(BIKE_NAMES)
     : kind === 'limo' ? 'Venn Limo'
+    : kind === 'sprayvan' ? 'Mural Row Supply Van'
+    : kind === 'bus' ? 'City Bus 12'
+    : kind === 'coupe' ? pick(COUPE_NAMES)
+    : kind === 'pickup' ? pick(PICKUP_NAMES)
     : pick(CAR_NAMES);
-  const topSpeed = kind === 'police' ? 34
+  const topSpeed = kind === 'interceptor' ? 36
+    : kind === 'police' ? 34
     : kind === 'motorcycle' ? 33
+    : kind === 'coupe' ? 34
     : kind === 'taxi' ? 27
     : kind === 'van' ? 20
+    : kind === 'bus' ? 20
+    : kind === 'pickup' ? 24
     : kind === 'truck' ? 17
     : kind === 'limo' ? 28
     : 26;
@@ -228,6 +303,14 @@ export function makeCar(kind, x, z, heading, color) {
 
 // --- traffic ----------------------------------------------------------------
 
+// A rare car drives a touch faster than its stock twin: the collection
+// is worth hunting for the drive alone, not just the bonus.
+export const RARE_CAR_SPEED_BONUS = 2;
+export function applyRareBonus(car) {
+  if (!car) return;
+  car.maxSpeed = (car.maxSpeed || 26) + RARE_CAR_SPEED_BONUS;
+}
+
 export function spawnTrafficCar(scene, colliders) {
   const vertical = Math.random() < 0.5;
   const lanes = [];
@@ -236,9 +319,10 @@ export function spawnTrafficCar(scene, colliders) {
   const along = (Math.random() * 2 - 1) * (CITY_HALF - 40);
   const direction = Math.random() < 0.5 ? 1 : -1;
   // The fleet is mixed now: bikes weave through, trucks haul to the
-  // harbor, yellow cabs work the avenues, vans fill the rest.
+  // harbor, yellow cabs work the avenues, vans fill the rest — and
+  // coupes and pickups have started showing up on the east side.
   const roll = Math.random();
-  const kind = roll < 0.05 ? 'motorcycle' : roll < 0.12 ? 'truck' : roll < 0.22 ? 'taxi' : roll < 0.32 ? 'van' : 'car';
+  const kind = roll < 0.05 ? 'motorcycle' : roll < 0.12 ? 'truck' : roll < 0.22 ? 'taxi' : roll < 0.32 ? 'van' : roll < 0.38 ? 'coupe' : roll < 0.43 ? 'pickup' : 'car';
   const car = makeCar(kind, vertical ? lane + 3 : along, vertical ? along : lane + 3, 0);
   car.vertical = vertical;
   car.lane = lane;
@@ -308,16 +392,18 @@ export function updateTrafficCar(car, dt, allCars) {
 
 // --- player driving ----------------------------------------------------------
 
-export function updatePlayerCar(car, axes, dt, handbrake, colliders, onCollide) {
+export function updatePlayerCar(car, axes, dt, handbrake, colliders, onCollide, speedMult) {
   const accel = axes.y;
   const steerInput = axes.x;
   const maxSpeed = car.maxSpeed;
   const reverseMax = 10;
   // Spiked tires: the car limps along until the timer runs out.
   car.spikeSlow = Math.max(0, (car.spikeSlow || 0) - dt);
-  const topSpeed = car.spikeSlow > 0 ? 10 : maxSpeed;
+  // Dee the driver makes every getaway car faster: the crew's speed
+  // multiplier lifts the top speed, defaulting to 1 with no driver.
+  const topSpeed = (car.spikeSlow > 0 ? 10 : maxSpeed) * (speedMult || 1);
   // Trucks are sluggish off the line; bikes snap forward.
-  const accelFactor = car.kind === 'truck' ? 0.6 : car.kind === 'motorcycle' ? 1.3 : 1;
+  const accelFactor = car.kind === 'truck' ? 0.6 : car.kind === 'bus' ? 0.55 : car.kind === 'motorcycle' ? 1.3 : car.kind === 'coupe' ? 1.15 : car.kind === 'pickup' ? 0.85 : 1;
   if (accel > 0) car.speed += 22 * accelFactor * accel * dt;
   else if (accel < 0) {
     if (car.speed > 0.5) car.speed -= 34 * dt; // brake
@@ -330,8 +416,9 @@ export function updatePlayerCar(car, axes, dt, handbrake, colliders, onCollide) 
   car.speed = clamp(car.speed, -reverseMax, topSpeed);
   const steerTarget = steerInput * (car.speed >= 0 ? 1 : -1) * clamp(Math.abs(car.speed) / 8, 0, 1);
   car.steer = lerp(car.steer, steerTarget, Math.min(1, dt * 7));
-  // Bikes flick through traffic; trucks wallow through the turn.
-  const steerRate = car.kind === 'motorcycle' ? 2.7 : car.kind === 'truck' ? 1.35 : 1.9;
+  // Bikes flick through traffic; trucks and buses wallow through the
+  // turn; coupes cut it sharper than anything else on the road.
+  const steerRate = car.kind === 'motorcycle' ? 2.7 : car.kind === 'coupe' ? 2.2 : car.kind === 'truck' ? 1.35 : car.kind === 'bus' ? 1.1 : car.kind === 'pickup' ? 1.7 : 1.9;
   const turnRate = car.steer * steerRate * clamp(Math.abs(car.speed) / 10, 0.25, 1);
   car.heading += turnRate * dt * (car.speed >= 0 ? 1 : -1);
   const nx = car.x + Math.sin(car.heading) * car.speed * dt;

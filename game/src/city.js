@@ -23,6 +23,10 @@ export const PLACES = {
   tower: { x: 70, z: -70, name: 'Solmar Tower' },
   office: { x: 84, z: -84, name: 'Venn\u2019s Office' },
   boardwalk: { x: -252, z: 0, name: 'Boardwalk' },
+  // The film lot: the Solmar backlot on the beach, west of the
+  // boardwalk — ramps, cameras, and the stunt crew. Mission 41
+  // starts here, and the Film Lot Ramp launches off the sand.
+  'film-lot': { x: -285, z: 90, name: 'Solmar Film Lot' },
   harbor: { x: 210, z: -210, name: 'North Harbor' },
   cannery: { x: 140, z: -210, name: 'Solmar Cannery' },
   freight: { x: 210, z: -140, name: 'Freight Yard' },
@@ -169,6 +173,32 @@ export function buildCity(scene) {
   const walkMat = new THREE.MeshStandardMaterial({ color: 0xcac2b2, roughness: 1 });
   const roadGeoX = new THREE.PlaneGeometry(CITY_HALF * 2, ROAD_WIDTH);
   const roadGeoZ = new THREE.PlaneGeometry(ROAD_WIDTH, CITY_HALF * 2);
+  // Puddles: dark reflective discs on the roads that appear while the
+  // asphalt is wet after rain and fade as it dries — the low sun
+  // catches them at golden hour and the lamps catch them at night.
+  const puddleMat = new THREE.MeshStandardMaterial({ color: 0x1a2a3a, roughness: 0.05, metalness: 0.7, transparent: true, opacity: 0 });
+  const puddleGeo = new THREE.CircleGeometry(5, 20);
+  const puddleGeoSmall = new THREE.CircleGeometry(2.5, 16);
+  const puddles = [];
+  // Twelve puddles on the roads and the open ground: the avenues, the
+  // plaza, the film lot sand and the runway apron — the low sun
+  // catches them at golden hour and the lamps catch them at night.
+  for (const [px, pz] of [[0, 35], [70, -35], [-70, 105], [140, 70], [-140, -70], [210, 35]]) {
+    const p = new THREE.Mesh(puddleGeo, puddleMat);
+    p.rotation.x = -Math.PI / 2;
+    p.position.set(px, 0.08, pz);
+    p.visible = false;
+    scene.add(p);
+    puddles.push(p);
+  }
+  for (const [px, pz] of [[0, -60], [-285, 100], [120, 260], [320, -30], [-70, -105], [210, -190]]) {
+    const p = new THREE.Mesh(puddleGeoSmall, puddleMat);
+    p.rotation.x = -Math.PI / 2;
+    p.position.set(px, 0.08, pz);
+    p.visible = false;
+    scene.add(p);
+    puddles.push(p);
+  }
   for (const v of avenues) {
     const r = new THREE.Mesh(roadGeoZ, roadMat);
     r.rotation.x = -Math.PI / 2;
@@ -804,6 +834,7 @@ export function buildCity(scene) {
   let timeOfDay = 0.74;
   let weather = 'clear'; // 'clear' | 'rain'
   let rainLevel = 0; // 0..1, ramps toward the weather's target
+  let wetLevel = 0; // 0..1, the roads stay wet after the rain stops and dry slowly
   let weatherTimer = 42;
   const SKY_KEYS = [
     // t, background, sun colour, sun intensity, hemisphere intensity, disc
@@ -873,7 +904,7 @@ export function buildCity(scene) {
       timeOfDay = ((t % 1) + 1) % 1;
     },
     getWeather() {
-      return { mode: weather, timeOfDay, rainLevel };
+      return { mode: weather, timeOfDay, rainLevel, wetLevel };
     },
     update(dt, time, px, pz) {
       // Advance the clock and roll the weather on its timer.
@@ -885,6 +916,15 @@ export function buildCity(scene) {
       }
       const targetRain = weather === 'rain' ? 1 : 0;
       rainLevel += (targetRain - rainLevel) * Math.min(1, dt * 0.6);
+      // Wet roads: the asphalt soaks fast in the rain and dries over
+      // about a minute after it stops — shinier, darker, and slower
+      // to stop on while it lasts.
+      const wetTarget = weather === 'rain' ? 1 : 0;
+      wetLevel += (wetTarget - wetLevel) * Math.min(1, dt * (wetTarget > wetLevel ? 0.5 : 0.015));
+      roadMat.roughness = 0.95 - wetLevel * 0.6;
+      roadMat.color.setHex(0x4a4b55).multiplyScalar(1 - wetLevel * 0.25);
+      puddleMat.opacity = Math.min(0.55, wetLevel * 0.55);
+      for (const p of puddles) p.visible = wetLevel > 0.35;
       // Sky, sun and lamps follow the clock.
       const sky = sampleSky(timeOfDay);
       scene.background = sky.bg;
@@ -912,7 +952,11 @@ export function buildCity(scene) {
       floodHeadMat.color.setHex(night > 0.5 ? 0xfff2c0 : 0x9a8a68);
       // Gentle ocean shimmer and a slow breathing of the sunset glow.
       oceanMat.opacity = 0.9 + Math.sin(time * 0.5) * 0.04;
-      sunDisc.scale.setScalar(1 + Math.sin(time * 0.3) * 0.015);
+      // The low sun looks bigger on the horizon and hazes the far
+      // streets: golden hour reads as golden hour, not just orange.
+      const lowSun = Math.max(0, 1 - Math.max(0, elev) * 3);
+      scene.fog.near = 180 - lowSun * 60;
+      sunDisc.scale.setScalar(1 + Math.sin(time * 0.3) * 0.015 + lowSun * 0.5);
       // Boats ride the swell at the dockside pier.
       for (const boat of boats) {
         boat.mesh.position.y = Math.sin(time * 0.9 + boat.phase) * 0.28;

@@ -147,3 +147,8 @@ console.log('largest game files: ' + biggest);
 // read on how the code is split up.
 const srcCount = gameSizes.filter((f) => f.path.startsWith('src/') && f.path.endsWith('.js')).length;
 console.log('source modules: ' + srcCount + ' game/src/*.js files');
+// The stunt system is the final cut's headline feature: refuse a run
+// that lost it, so a missing module never ships silently.
+if (!existsSync(join(repoRoot, 'game', 'src', 'stunts.js'))) {
+  throw new Error('game/src/stunts.js is missing — the stunt system did not ship');
+}

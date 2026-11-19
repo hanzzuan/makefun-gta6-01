@@ -56,7 +56,7 @@ export function makeNightclubState() {
     lastIncomeDay: -1, // in-game day of the last till collection
     crowd: 0, // crowd meter 0..100, live during a set
     set: null, // the live DJ set, or null when Mara is not playing
-    upgrades: { sound: false, lounge: false, sign: false, backroom: false, mural: false }, // club upgrades bought
+    upgrades: { sound: false, lounge: false, sign: false, backroom: false, mural: false, screen: false }, // club upgrades bought
   };
 }
 
@@ -72,7 +72,7 @@ export function nightclubFromSave(saved) {
   state.lastIncomeDay = Number.isFinite(saved.lastIncomeDay) ? Math.floor(saved.lastIncomeDay) : -1;
   // Upgrades survive the save; an older save without them starts clean.
   if (saved.upgrades && typeof saved.upgrades === 'object') {
-    for (const k of ['sound', 'lounge', 'sign', 'backroom', 'mural']) {
+    for (const k of ['sound', 'lounge', 'sign', 'backroom', 'mural', 'screen']) {
       if (saved.upgrades[k] === true) state.upgrades[k] = true;
     }
   }
@@ -114,6 +114,7 @@ export const CLUB_UPGRADES = [
   { id: 'sign', name: 'Neon Sign', cost: 2000, blurb: 'The name in pink neon over the door — reputation +1 at once' },
   { id: 'backroom', name: 'Back Room', cost: 12000, blurb: 'A quiet room behind the bar — the club hears where the fugitives hide, and the board pays 10% more' },
   { id: 'mural', name: 'Mural Wall', cost: 6000, blurb: 'A wall inside the club for the taggers — the street comes to dance, and the till pays 15% more' },
+  { id: 'screen', name: 'Silver Screen', cost: 10000, blurb: 'A cinema screen over the dance floor — film nights pay 20% more on the till' },
 ];
 
 // Buy a club upgrade. Returns { ok, cost, name } or { ok: false, reason }.
@@ -131,11 +132,13 @@ export function buyClubUpgrade(state, money, id) {
 // The nightly take: a base till, more with reputation, more again
 // with bouncers on the door — and half again with the VIP lounge.
 // The mural wall brings the street inside, and the till pays 15% more.
+// The silver screen runs film nights, and the till pays 20% more.
 export function clubDailyTake(state) {
   if (!state.owned) return 0;
   const base = 200 + state.rep * 150 + state.bouncers * 150;
   let take = state.upgrades.lounge ? Math.round(base * 1.5) : base;
   if (state.upgrades.mural) take = Math.round(take * 1.15);
+  if (state.upgrades.screen) take = Math.round(take * 1.2);
   return take;
 }
 
@@ -325,9 +328,25 @@ export function nightclubSummary(state) {
 }
 
 // The HUD line under the objective: the club at a glance.
+// The film nights on the silver screen: one film a night, picked by
+// the calendar, so the club's regulars always know what is showing.
+export const CLUB_FILM_NIGHTS = [
+  'Runway 27 — the chase film, starring the stunt crew.',
+  'Sunset Over the Bay — the slow one, for the front row.',
+  'The Last Race — boats, a lighthouse, and a dawn getaway.',
+  'The Film Job — a heist, in the club where the heist was planned.',
+  'Golden Hour Chase — horns, a siren, and the sun in the mirror.',
+  'Mara\\u2019s Theme — the film about the driver in the booth.',
+];
+export function clubFilmNightLine(state) {
+  if (!state || !state.owned || !state.upgrades.screen) return '';
+  const day = Math.floor(Date.now() / 86400000);
+  return ' · tonight: ' + CLUB_FILM_NIGHTS[day % CLUB_FILM_NIGHTS.length];
+}
+
 export function nightclubStatusLine(state) {
   if (!state || !state.owned) return '';
-  return `CLUB NEON · rep ${state.rep}/${CLUB_REP_MAX} · ${state.bouncers} bouncers · till $${clubDailyTake(state)}/night`;
+  return `CLUB NEON · rep ${state.rep}/${CLUB_REP_MAX} · ${state.bouncers} bouncers · till $${clubDailyTake(state)}/night` + clubFilmNightLine(state);
 }
 
 // A door line for the toast when Mara walks in: the staff know her.

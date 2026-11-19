@@ -4,7 +4,7 @@
 [![rank](https://make.fun/badge/gta6-01/hanzzuan/makefun-gta6-01/rank.svg)](https://make.fun/bounty/gta6-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=gta6-01)
 [![reward](https://make.fun/badge/gta6-01/hanzzuan/makefun-gta6-01/reward.svg)](https://make.fun/bounty/gta6-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-01)
 
-**SOLMAR — Sunset Streets**: a complete original open-world crime game in the sun-soaked coastal city of Solmar. Mara Voss is back home to save her brother's garage from the fixer Dario Venn — forty story missions, car theft and driving, traffic and pedestrians, a wanted level with Solmar PD interceptors that chase and ram, combat, taxi fares, a live minimap, and a sunset you can drive into. The harbor update adds the North Harbor industrial district (cannery, freight yard, container stacks, gantry cranes, dockside pier), a weather system with rain and a full day/night cycle, motorcycles, delivery trucks and working taxis, police roadblocks at high wanted levels, explosive barrels, and a sneak-and-stamina system. The South Solmar update adds the Palmera Resort and Solmar Airport (terminal, control tower, Runway 27 with a taxiing jet), missions 6–8 that end Venn for good, a garage that tunes Mara's own Comet GT, a taxi company with ranks and VIP fares, street races with checkpoint gates, and a police helicopter at five stars. The East Solmar update adds the university campus, the stadium and the mall east of the old city, missions 9–11 that finish Rocco's crew, boats and a marina with water chases, property ownership, rival crew chases, a switchable radio, new vehicles, and dynamic city events. The crew and casino update adds missions 12–14 that close Venn's books, Rocco's vault, and Venn's heir in the stadium bowl, a hireable and trainable crew (a driver, a hacker, a lookout, a negotiator and an artist) at the safehouse, and the Solmar Casino at the resort with slots, blackjack and roulette for real stakes. The nightclub update adds missions 15–16 that take Club Neon and the harbor job, a nightclub business to own with a DJ mini-game and bouncers for hire, and a taxi rank that fast-travels Mara anywhere in town. The finale update adds missions 17–18 — a siege on the safehouse and one last boat at sunset — club upgrades (a sound system, a VIP lounge, a neon sign), a fourth crew hand in Rook the negotiator, radio ads between the songs, two more street races, a street-race city event, a penthouse above the club, and a whale table at the casino. The closing arc adds missions 37–40 — the last ledger at the airport, a night boat chase to the lighthouse, the showroom job, and one last sunset — plus a street-art scene: twelve spray walls around the city with a spray mini-game, a fifth crew hand in Ink the artist, a gold spray-can paint, and a tag war with Rocco's runners who paint over finished walls. Built with three.js, no build step, no network: everything the game loads lives under `game/`.
+**SOLMAR — Sunset Streets**: a complete original open-world crime game in the sun-soaked coastal city of Solmar. Mara Voss is back home to save her brother's garage from the fixer Dario Venn — forty-four story missions, car theft and driving, traffic and pedestrians, a wanted level with Solmar PD interceptors that chase and ram, combat, taxi fares, a live minimap, and a sunset you can drive into. The harbor update adds the North Harbor industrial district (cannery, freight yard, container stacks, gantry cranes, dockside pier), a weather system with rain and a full day/night cycle, motorcycles, delivery trucks and working taxis, police roadblocks at high wanted levels, explosive barrels, and a sneak-and-stamina system. The South Solmar update adds the Palmera Resort and Solmar Airport (terminal, control tower, Runway 27 with a taxiing jet), missions 6–8 that end Venn for good, a garage that tunes Mara's own Comet GT, a taxi company with ranks and VIP fares, street races with checkpoint gates, and a police helicopter at five stars. The East Solmar update adds the university campus, the stadium and the mall east of the old city, missions 9–11 that finish Rocco's crew, boats and a marina with water chases, property ownership, rival crew chases, a switchable radio, new vehicles, and dynamic city events. The crew and casino update adds missions 12–14 that close Venn's books, Rocco's vault, and Venn's heir in the stadium bowl, a hireable and trainable crew (a driver, a hacker, a lookout, a negotiator and an artist) at the safehouse, and the Solmar Casino at the resort with slots, blackjack and roulette for real stakes. The nightclub update adds missions 15–16 that take Club Neon and the harbor job, a nightclub business to own with a DJ mini-game and bouncers for hire, and a taxi rank that fast-travels Mara anywhere in town. The finale update adds missions 17–18 — a siege on the safehouse and one last boat at sunset — club upgrades (a sound system, a VIP lounge, a neon sign), a fourth crew hand in Rook the negotiator, radio ads between the songs, two more street races, a street-race city event, a penthouse above the club, and a whale table at the casino. The closing arc adds missions 37–40 — the last ledger at the airport, a night boat chase to the lighthouse, the showroom job, and one last sunset — plus a street-art scene: twelve spray walls around the city with a spray mini-game, a fifth crew hand in Ink the artist, a gold spray-can paint, and a tag war with Rocco's runners who paint over finished walls. Built with three.js, no build step, no network: everything the game loads lives under `game/`.
 
 ## Run it
 
@@ -20,7 +20,8 @@ Then open http://localhost:8080 in desktop Chrome.
 - **Mouse click** shoot (with the pistol), **F** punch, **1 / 2** fists / pistol
 - **G** garage (on foot near Venn's Garage — repaint and tune Mara's Comet GT), **R** race (in a car at a race start marker)
 - **N** radio (switch station — Sunset FM, Harbour Rock, Night Drive, Talk Solmar, Casino Jazz, Street FM), **B** property (near a gold property sign — buy a safehouse, an apartment, or the penthouse)
-- **I** spray (at a blank wall — press **E** to lay a coat near the middle of the needle; three coats finish the wall, twelve walls make a Street Legend), **U** bounty board (at the garage — ten fugitives, and Vex works the same board)
+- **I** spray (at a blank wall — press **E** to lay a coat near the middle of the needle; three coats finish the wall, twelve walls make a Street Legend), **U** bounty board (at the garage — eleven fugitives, and Vex works the same board)
+- **Y** stunt board (at the garage — eight ramps, best airtimes, and the Stunt Legend title ladder)
 - **V** crew (at the safehouse — hire Dee the driver, Nix the hacker, or Sable the lookout), **X** casino (at the resort door — slots and blackjack for real stakes)
 - **C** club (at the Club Neon door — buy the club, hire bouncers, play a DJ set), **T** taxi rank (anywhere on foot — a cab to any landmark in town)
 - **H** horn (scatters pedestrians), **mouse wheel** camera zoom, **P** pause, **M** mute — progress saves automatically to localStorage
@@ -142,3 +143,66 @@ thirteen circuits now (the Bounty Run joined), ten properties are for
 sale (a Bounty Office in the back alley joined), the bus stops at the
 Back Alley, fast travel reaches it too, and five-star police now roll
 in black interceptors.
+
+## The final cut — forty-four missions, eight ramps, one legend
+
+The story now runs forty-four missions: after the M40 finale, M41 "The
+Film Job" clears the backlot stuntmen holding the director hostage,
+M42 "Stunt Double" runs the runway jump while Rocco's stuntmen try to
+run Mara off the strip, M43 "The Last Race" takes the pier and the bay
+at dawn, and M44 "Sunset Forever" is the true final sunset — the
+lighthouse, the plaza, the tower and home, in one run, for $300,000.
+A new system keeps Solmar busy after the story ends: eight stunt ramps
+around the city (the runway, the film lot, the stadium forecourt, the
+mall, the harbor, the plaza, the marina pier and the campus quad) —
+hit one flat out and the car launches, scored on airtime and entry
+speed, paying cash and a title on the Stunt Legend ladder. Big air runs
+in slow motion with the letterbox closed in, and every jump is on the
+minimap. A sixth crew hand joins at the safehouse: Jax "Airtime" Cole,
+the backlot stunt driver, pays 25% more on every jump. The film lot
+itself is new — a backlot set on the beach with a camera crane, a film
+van, and a film crew walking the sand — plus a ninth radio station,
+Reel FM, movie scores and chase themes from the backlot. Three more
+races (the Stunt Circuit, the Film Lot Sprint and the Sunset GP), three
+more properties (a Film Studio, a Stunt Garage and a Sunset Penthouse),
+two more job kinds on the board (Stunt Runs and Film Runs), an eleventh
+fugitive on the wanted board (Sal "Airtime" Vega, hiding at the film
+lot), and a stunt-show city event at the lot. Driving feels heavier
+too: the handbrake slides the tail out into a real drift, brake lights
+flare, the camera widens with speed, headlights cut the dark, and the
+roads stay wet and shiny after the rain — with puddles that catch the
+low sun. Pedestrians hurry for cover in a shower, and the traffic
+slows with them.
+
+### How to jump
+
+Find an orange ramp on the minimap (the triangles) and hit it flat out
+— 12 m/s or faster, along the ramp's line, or the car just drives over
+the wedge. The score is airtime plus entry speed, paid at twice the
+score; Jax on the crew pays 25% more, and owning the Film Studio pays
+25% more on top. Land a second jump inside twenty seconds and the
+combo chains — each link pays half again, up to three times. One ramp
+every day pays double: the ramp of the day, posted on the stunt board
+(press **Y** at the garage) and called out on Reel FM. Clear all eight
+ramps for the $5,000 set bonus and the Stunt Legend title. Rocco's crew
+posts a duel score after your first jump — beat it with one jump inside
+two minutes for $300. Big air runs in slow motion with the letterbox
+closed in, the speedo reads AIRBORNE with the live airtime, and the PD
+adds heat if a cop watches a big jump land.
+
+### How the city feels real
+
+Solmar drives like a coastal city, not a toy box. The handbrake slides
+the tail out into a drift — the tyres scrub speed, the camera widens
+with it, and the screech starts the moment the tail steps out. Brake
+lights flare while the pedal is down. The camera's field of view opens
+as the speed climbs and shudders past 90 km/h. After dark, Mara's car
+carries a real headlight beam that swings with the wheel, and the
+traffic's tail lights come on with it. The sun hangs low over the ocean
+at golden hour — bigger on the horizon, hazing the far streets — and
+after the rain the roads stay wet and dark, the puddles catching the
+low sun and the lamps, while the grip is gone: the tail steps out
+sooner, the brakes take longer, and the traffic slows with the shower.
+Pedestrians hurry for cover in the rain, the film crew talks between
+takes at the backlot, and the police helicopter tightens its orbit to
+watch a big jump land.

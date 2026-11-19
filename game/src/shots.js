@@ -15,7 +15,7 @@ import { makeCar } from './cars.js';
 import { makeEnemy, makeTagger, makeRival } from './combat.js';
 import { spawnRoadblock } from './police.js';
 
-export const SHOT_NAMES = ['chase', 'drive', 'city', 'mission', 'casino', 'club', 'bounty', 'graffiti'];
+export const SHOT_NAMES = ['chase', 'drive', 'city', 'mission', 'casino', 'club', 'bounty', 'graffiti', 'stunt'];
 
 // Shared staging: put Mara in a car, hide her on-foot mesh, and hand
 // the wheel to the loop. Every driving preset uses this so the car
@@ -264,6 +264,25 @@ const SHOT_DEFS = {
       }
       game.city.setWeather('clear');
       game.city.setTimeOfDay(0.95);
+    },
+  },
+  stunt: {
+    label: 'Stunt jump: Mara flat out down Runway 27 in the sports coupe, off the Runway Jump ramp at golden hour',
+    setup(game) {
+      // The stunt shot: Mara in the orange coupe on the runway, flat
+      // out east toward the Runway Jump ramp at (120, 272), golden
+      // hour light, the terminal behind her. The car is already doing
+      // 24, so it launches off the ramp the moment the shot runs.
+      const car = makeCar('coupe', 60, 272, Math.PI / 2);
+      car.name = 'Veloce Coupe';
+      stageInCar(game, car);
+      car.speed = 24;
+      game.wanted.heat = 0;
+      game.wanted.level = 0;
+      game.missions.index = 40;
+      game.missions.stage = 0;
+      game.city.setWeather('clear');
+      game.city.setTimeOfDay(0.74);
     },
   },
 };

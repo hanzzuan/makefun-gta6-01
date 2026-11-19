@@ -59,6 +59,7 @@ export function taxiFarePay(company, base, vip, destKey, driver) {
   if (destKey && TAXI_EAST_DESTINATIONS.includes(destKey)) pay *= 1 + TAXI_EAST_BONUS;
   if (destKey && TAXI_BOUNTY_DESTINATIONS.includes(destKey)) pay *= 1 + TAXI_BOUNTY_BONUS;
   if (destKey && TAXI_MURAL_DESTINATIONS.includes(destKey)) pay *= 1 + TAXI_MURAL_BONUS;
+  if (destKey && TAXI_FILM_DESTINATIONS.includes(destKey)) pay *= 1 + TAXI_FILM_BONUS;
   if (driver) pay *= 1.25;
   return Math.round(pay);
 }
@@ -109,6 +110,14 @@ export const TAXI_BOUNTY_BONUS = 0.15;
 // walls go up, and they tip for the colour.
 export const TAXI_MURAL_DESTINATIONS = ['mural-row'];
 export const TAXI_MURAL_BONUS = 0.2;
+// Fares to the film lot pay premiere money: the backlot is the far
+// side of the beach, and the film crew tips for the ride.
+export const TAXI_FILM_DESTINATIONS = ['film-lot', 'runway', 'stadium'];
+// The film destinations are the shoot locations: the backlot, the
+// runway strip and the stadium bowl — a fare to any of them pays the
+// film bonus, because the crew always tips the driver who gets them
+// to the set on time.
+export const TAXI_FILM_BONUS = 0.3;
 
 // Pick a destination for a company fare. VIP guests always want the
 // resort or the airport — the two places that pay the most — and since
@@ -118,8 +127,8 @@ export const TAXI_MURAL_BONUS = 0.2;
 // drives there.
 export function companyFareDestination(rng, vip) {
   const keys = vip
-    ? ['resort', 'airport', 'terminal', 'nightclub']
-    : ['resort', 'airport', 'terminal', 'plaza', 'marina', 'cafe', 'mall', 'harbor', 'stadium', 'campus', 'nightclub', 'mural-row'];
+    ? ['resort', 'airport', 'terminal', 'nightclub', 'film-lot']
+    : ['resort', 'airport', 'terminal', 'plaza', 'marina', 'cafe', 'mall', 'harbor', 'stadium', 'campus', 'nightclub', 'mural-row', 'film-lot'];
   const key = keys[Math.floor(rng() * keys.length)];
   return { key, place: PLACES[key] };
 }

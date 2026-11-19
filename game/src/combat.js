@@ -126,6 +126,22 @@ export function makeEnemy(scene, x, z, variant) {
     ear.position.set(-0.2, 1.82, 0.12);
     group.add(ear);
   }
+  // Stuntmen wear an orange jumpsuit and a white crash helmet — the
+  // film lot's own crew, quick on the draw and hard to knock down.
+  if (kind === 'stuntman') {
+    const suit = new THREE.Mesh(
+      new THREE.BoxGeometry(0.66, 0.7, 0.34),
+      new THREE.MeshStandardMaterial({ color: 0xff7a1a, roughness: 0.7 }),
+    );
+    suit.position.y = 1.25;
+    group.add(suit);
+    const helmet = new THREE.Mesh(
+      new THREE.SphereGeometry(0.24, 10, 8),
+      new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.3 }),
+    );
+    helmet.position.y = 1.85;
+    group.add(helmet);
+  }
   // Guards wear a gold badge on the chest; Venn wears a red tie and a
   // gold watch — the two men the player must spot in a crowd of suits.
   if (kind === 'guard') {
@@ -157,7 +173,7 @@ export function makeEnemy(scene, x, z, variant) {
     mesh: group,
     x, z,
     variant: kind,
-    health: kind === 'venn' ? 300 : kind === 'boss' ? 260 : kind === 'collector' ? 220 : kind === 'bouncer' ? 200 : kind === 'fugitive-boss' ? 280 : kind === 'fugitive-armoured' ? 220 : kind === 'enforcer' ? 150 : kind === 'fugitive' ? 150 : kind === 'rival' ? 130 : kind === 'guard' ? 120 : kind === 'smuggler' ? 90 : 100,
+    health: kind === 'venn' ? 300 : kind === 'boss' ? 260 : kind === 'collector' ? 220 : kind === 'bouncer' ? 200 : kind === 'fugitive-boss' ? 280 : kind === 'fugitive-armoured' ? 220 : kind === 'enforcer' ? 150 : kind === 'fugitive' ? 150 : kind === 'rival' ? 130 : kind === 'guard' ? 120 : kind === 'stuntman' ? 110 : kind === 'smuggler' ? 90 : 100,
     alive: true,
     fireTimer: rand(0.5, 1.5),
     duckTimer: 0,
@@ -194,6 +210,7 @@ export function cashDropFor(enemy) {
   if (enemy.variant === 'fugitive') return 50;
   if (enemy.variant === 'rival') return 25;
   if (enemy.variant === 'smuggler') return 15;
+  if (enemy.variant === 'stuntman') return 30;
   if (enemy.variant === 'tagger') return 20;
   return 0;
 }
@@ -220,6 +237,7 @@ export function updateEnemy(enemy, dt, playerX, playerZ, onEnemyShot) {
   enemy.fireTimer -= dt;
   if (d < 42 && enemy.fireTimer <= 0) {
     const reload = enemy.variant === 'enforcer' ? rand(0.6, 1.0)
+      : enemy.variant === 'stuntman' ? rand(0.6, 1.1)
       : enemy.variant === 'collector' ? rand(1.2, 1.8)
       : enemy.variant === 'guard' ? rand(0.8, 1.3)
       : enemy.variant === 'venn' ? rand(0.5, 0.9)
@@ -475,7 +493,9 @@ export function makeHealthPack(scene, x, z) {
 }
 
 // What an enemy says when the fight starts: Rocco's crew talks, Venn's
-// crew never did. The caller toasts it when the crew spawns.
+// crew never did. The caller toasts it when the crew spawns. The
+// stuntmen talk the most — the backlot never shuts up, even in a
+// gunfight — and the smugglers and fugitives talk too, now.
 export const ENEMY_TAUNTS = {
   rival: ['East side is ours, Voss.', 'Rocco sends his regards.', 'You drive like a tourist, Mara.'],
   boss: ['The city was mine the day Venn fell.', 'You took my books. Now you pay for them.', 'Nobody outruns Rocco twice.'],
@@ -484,9 +504,19 @@ export const ENEMY_TAUNTS = {
   guard: ['Private property. Walk away.', 'The terminal is closed tonight.'],
   venn: ['Fifty thousand, Mara. I always collect.'],
   collector: ['The deed stays with me.', 'Venn will hear about this.'],
+  smuggler: ['The drop is ours. The bay is ours.', 'You should have stayed on the road.'],
+  fugitive: ['You will never take me alive.', 'The PD pays, but I pay better.'],
+  stuntman: [
+    'Cut! That was not in the script!',
+    'The director wants you down in one take!',
+    'You are not the stunt double — I am!',
+    'Hold still, the camera is rolling!',
+    'This is a closed set, Mara!',
+  ],
 };
 
 export function enemyTaunt(variant) {
-  const lines = ENEMY_TAUNTS[variant] || ENEMY_TAUNTS.crew;
+  const key = typeof variant === 'string' ? variant : (variant && variant.variant) || 'crew';
+  const lines = ENEMY_TAUNTS[key] || ENEMY_TAUNTS.crew;
   return lines[Math.floor(Math.random() * lines.length)];
 }

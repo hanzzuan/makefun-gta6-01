@@ -224,6 +224,38 @@ export function buildPedMesh(shirt, pants, variant) {
     );
     hat.position.set(0, 2.05, 0);
     group.add(hat);
+  } else if (variant === 'film-crew') {
+    // Film crew: a clapperboard under one arm and a headset around the
+    // neck — the backlot's own people, walking the beach between takes.
+    const board = new THREE.Mesh(
+      new THREE.BoxGeometry(0.4, 0.3, 0.06),
+      new THREE.MeshStandardMaterial({ color: 0x14141a, roughness: 0.6 }),
+    );
+    board.position.set(0.44, 1.15, 0.12);
+    group.add(board);
+    const stripe = new THREE.Mesh(
+      new THREE.BoxGeometry(0.42, 0.08, 0.07),
+      new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.5 }),
+    );
+    stripe.position.set(0.44, 1.28, 0.12);
+    group.add(stripe);
+    // The headset: a band over the head and two ear cups, so the crew
+    // hears the director and nobody else.
+    const band = new THREE.Mesh(
+      new THREE.TorusGeometry(0.28, 0.035, 6, 12, Math.PI),
+      new THREE.MeshStandardMaterial({ color: 0x1a1a1e, roughness: 0.6 }),
+    );
+    band.position.set(0, 1.95, 0);
+    group.add(band);
+    for (const sx of [-0.28, 0.28]) {
+      const cup = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.09, 0.09, 0.06, 8),
+        new THREE.MeshStandardMaterial({ color: 0x1a1a1e, roughness: 0.6 }),
+      );
+      cup.rotation.z = Math.PI / 2;
+      cup.position.set(sx, 1.85, 0);
+      group.add(cup);
+    }
   }
   group.userData = { legL, legR, armL, armR };
   return group;
@@ -245,7 +277,7 @@ export function spawnPedestrian(scene, forcedVariant) {
   // airport and the resort, where main.js places them by hand. Students
   // and shoppers are the same: the campus and the mall place them.
   const variant = forcedVariant || pickWeighted([
-    ['walker', 55], ['jogger', 15], ['worker', 12], ['tourist', 10], ['elder', 8], ['informant', 2], ['tagger', 6],
+    ['walker', 55], ['jogger', 15], ['worker', 12], ['tourist', 10], ['elder', 8], ['informant', 2], ['tagger', 6], ['film-crew', 3],
   ]);
   const mesh = buildPedMesh(pick(SHIRTS), pick(PANTS), variant);
   mesh.position.set(x, 0, z);
@@ -301,6 +333,22 @@ export function spawnTaggerCrew(scene, x, z, count, props) {
     ped.speed = 0;
     props.push(ped.mesh);
   }
+}
+
+// The film crew's set talk: what the backlot says between takes.
+// Walk up to a film-crew member and the hint line carries their voice.
+export const FILM_CREW_LINES = [
+  '"Quiet on the set — the stunt double is about to jump."',
+  '"The director wants the runway jump in one take. One."',
+  '"That ramp at the film lot? Mara Voss cleared it. Twice."',
+  '"The crane shot is the money shot — hold the car in frame."',
+  '"Reel FM is playing the chase theme again. It never gets old."',
+  '"The stunt crew parks its vans by the ramp. The pay is in the air."',
+  '"Jax says the slow-mo is longer when he is driving. He would know."',
+  '"The sunset penthouse is the wrap party. The film lot is the work."',
+];
+export function filmCrewLine() {
+  return FILM_CREW_LINES[Math.floor(Math.random() * FILM_CREW_LINES.length)];
 }
 
 export function spawnPedestrianAt(scene, x, z, variant) {
@@ -378,7 +426,7 @@ export function spawnDog(scene, owner) {
   return { mesh: group, owner, variant: 'dog', x: owner.x + 1, z: owner.z + 1 };
 }
 
-export function updatePedestrian(ped, dt, threats) {
+export function updatePedestrian(ped, dt, threats, rain) {
   // Dogs ignore the sidewalk rules: they just trot after their owner.
   if (ped.variant === 'dog') {
     const dx = ped.owner.x - ped.x;
@@ -434,7 +482,9 @@ export function updatePedestrian(ped, dt, threats) {
     if (ped.wait > 0) {
       ped.wait -= dt;
     } else {
-      const step = ped.speed * dt;
+      // Rain makes everyone hurry: peds walk up to 70% faster in a
+      // shower, heads down, looking for the nearest awning.
+      const step = ped.speed * (1 + (rain || 0) * 0.7) * dt;
       if (ped.axis === 'z') {
         ped.z += ped.dir * step;
         if (Math.abs(ped.z) > CITY_HALF - 20) ped.dir *= -1;

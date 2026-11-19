@@ -108,7 +108,7 @@ export function makeHeli(scene) {
 // the map and circles above the player; below 4 it climbs away and
 // despawns. Returns whether the spotlight is currently pinning the
 // player (the caller uses it to slow the heat decay).
-export function updateHeli(heli, dt, px, pz, wantedLevel, time, overBay, hunt) {
+export function updateHeli(heli, dt, px, pz, wantedLevel, time, overBay, hunt, stunt) {
   // During the lighthouse signal run the chopper circles the bay, not
   // Mara: the PD is hunting the signal, and the spotlight sweeps the
   // pier while she lights the lamp. During a bounty hunt the chopper
@@ -145,14 +145,15 @@ export function updateHeli(heli, dt, px, pz, wantedLevel, time, overBay, hunt) {
   // Circle the player at a 24 m radius, 34 m up, banking into the
   // turn — tight enough that the chopper reads in the chase camera,
   // high enough that the spotlight still pins the whole street. On a
-  // bounty hunt it drops to 18 m and 28 m up, closing the circle.
+  // bounty hunt it drops to 18 m and 28 m up, closing the circle. On
+  // a big stunt jump it tightens to 20 m to watch the landing.
   heli.angle += dt * 0.55;
-  const radius = hunt ? 18 : 24;
+  const radius = hunt ? 18 : stunt ? 20 : 24;
   const tx = orbitX + Math.cos(heli.angle) * radius;
   const tz = orbitZ + Math.sin(heli.angle) * radius;
   heli.group.position.x = tx;
   heli.group.position.z = tz;
-  heli.group.position.y = (hunt ? 28 : 34) + Math.sin(time * 0.7) * 1.5;
+  heli.group.position.y = (hunt ? 28 : stunt ? 30 : 34) + Math.sin(time * 0.7) * 1.5;
   heli.group.rotation.y = -heli.angle + Math.PI / 2;
   heli.group.rotation.z = 0.12;
   // Spin up the rotor to full speed and keep it there.

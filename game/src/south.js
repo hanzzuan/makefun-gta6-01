@@ -657,6 +657,170 @@ export function buildBeachMural(scene) {
   return group;
 }
 
+// The film lot: the Solmar backlot on the beach at (-285, 90) — a
+// facade wall for the street set, a camera crane on a tripod, and two
+// floodlight poles, so the lot reads as a working set from the road.
+// The ramps live here too (built by stunts.js), and the stunt crew's
+// film van parks by the crane.
+export function buildFilmLot(scene) {
+  const group = new THREE.Group();
+  // The street-set facade: a tall flat wall with a painted sign board.
+  const facade = new THREE.Mesh(
+    new THREE.BoxGeometry(14, 6, 0.6),
+    new THREE.MeshStandardMaterial({ color: 0x8a7a68, roughness: 1 }),
+  );
+  facade.position.set(0, 3, -6);
+  facade.castShadow = true;
+  group.add(facade);
+  const sign = new THREE.Mesh(
+    new THREE.BoxGeometry(8, 1.6, 0.2),
+    new THREE.MeshBasicMaterial({ color: 0xffd23e }),
+  );
+  sign.position.set(0, 5.2, -5.6);
+  group.add(sign);
+  // The camera crane: a tripod mast, an angled arm, and the camera box.
+  const mast = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.14, 0.2, 7, 6),
+    new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.5, metalness: 0.6 }),
+  );
+  mast.position.set(6, 3.5, 2);
+  group.add(mast);
+  const arm = new THREE.Mesh(
+    new THREE.BoxGeometry(0.3, 0.3, 6),
+    new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.5, metalness: 0.6 }),
+  );
+  arm.position.set(6, 6.6, 0);
+  arm.rotation.x = 0.5;
+  group.add(arm);
+  const camera = new THREE.Mesh(
+    new THREE.BoxGeometry(0.9, 0.6, 1.2),
+    new THREE.MeshStandardMaterial({ color: 0x14141a, roughness: 0.4 }),
+  );
+  camera.position.set(6, 5.4, -2.4);
+  group.add(camera);
+  // Two floodlight poles so the set stays lit after dark.
+  for (const lx of [-8, 10]) {
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.14, 6, 6),
+      new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.6, metalness: 0.6 }),
+    );
+    pole.position.set(lx, 3, 4);
+    group.add(pole);
+    const head = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 0.7, 0.5),
+      new THREE.MeshBasicMaterial({ color: 0xfff2c0 }),
+    );
+    head.position.set(lx, 6.2, 4);
+    group.add(head);
+  }
+  // The backlot street: a second set down the beach — a western street
+  // facade with a water tower behind it, so the lot reads as a town
+  // from the sand and not a single wall.
+  const street = new THREE.Mesh(
+    new THREE.BoxGeometry(10, 4.5, 0.6),
+    new THREE.MeshStandardMaterial({ color: 0x9a6a4a, roughness: 1 }),
+  );
+  street.position.set(-12, 2.25, 2);
+  street.rotation.y = 0.5;
+  street.castShadow = true;
+  group.add(street);
+  const streetSign = new THREE.Mesh(
+    new THREE.BoxGeometry(5, 1.1, 0.2),
+    new THREE.MeshBasicMaterial({ color: 0xc2432b }),
+  );
+  streetSign.position.set(-12, 3.9, 2.4);
+  streetSign.rotation.y = 0.5;
+  group.add(streetSign);
+  // A second camera crane for the western set: a shorter mast, a
+  // counterweighted arm, and the camera box aimed down the street —
+  // the second unit shoots the backlot street while the first unit
+  // shoots the main facade.
+  const mast2 = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.12, 0.18, 5, 6),
+    new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.5, metalness: 0.6 }),
+  );
+  mast2.position.set(-16, 2.5, 6);
+  group.add(mast2);
+  const arm2 = new THREE.Mesh(
+    new THREE.BoxGeometry(0.25, 0.25, 4.5),
+    new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.5, metalness: 0.6 }),
+  );
+  arm2.position.set(-16, 4.8, 4);
+  arm2.rotation.x = 0.45;
+  group.add(arm2);
+  const camera2 = new THREE.Mesh(
+    new THREE.BoxGeometry(0.8, 0.55, 1.1),
+    new THREE.MeshStandardMaterial({ color: 0x14141a, roughness: 0.4 }),
+  );
+  camera2.position.set(-16, 3.9, 1.8);
+  group.add(camera2);
+  // The water tower: four legs, a tank, a cone roof — the lot's skyline.
+  const tankMat = new THREE.MeshStandardMaterial({ color: 0x6a7a8a, roughness: 0.8, metalness: 0.3 });
+  const tank = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 2.4, 10), tankMat);
+  tank.position.set(12, 7.2, -4);
+  tank.castShadow = true;
+  group.add(tank);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(1.9, 1.2, 10), tankMat);
+  roof.position.set(12, 9, -4);
+  group.add(roof);
+  for (const [lx, lz] of [[10.8, -2.8], [13.2, -2.8], [10.8, -5.2], [13.2, -5.2]]) {
+    const leg = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.09, 0.12, 6, 6),
+      new THREE.MeshStandardMaterial({ color: 0x3a3a40, roughness: 0.6, metalness: 0.5 }),
+    );
+    leg.position.set(lx, 3, lz);
+    group.add(leg);
+  }
+  // The director's corner: two canvas chairs and a folding table with
+  // the shooting script, where the director waits between takes.
+  for (const cx of [-4, -2.2]) {
+    const chair = new THREE.Mesh(
+      new THREE.BoxGeometry(0.7, 0.9, 0.6),
+      new THREE.MeshStandardMaterial({ color: 0xe8e0c8, roughness: 0.9 }),
+    );
+    chair.position.set(cx, 0.45, 8);
+    group.add(chair);
+  }
+  const table = new THREE.Mesh(
+    new THREE.BoxGeometry(2.2, 0.1, 1),
+    new THREE.MeshStandardMaterial({ color: 0x5a4a38, roughness: 0.9 }),
+  );
+  table.position.set(-3.1, 0.75, 9.5);
+  group.add(table);
+  const script = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5, 0.06, 0.7),
+    new THREE.MeshBasicMaterial({ color: 0xffffff }),
+  );
+  script.position.set(-3.1, 0.82, 9.5);
+  group.add(script);
+  // Sandbags along the set edge, so the lot holds its line against the
+  // wind — and against a car that comes in too hot.
+  for (let i = 0; i < 6; i++) {
+    const bag = new THREE.Mesh(
+      new THREE.BoxGeometry(1.1, 0.45, 0.6),
+      new THREE.MeshStandardMaterial({ color: 0xb09a72, roughness: 1 }),
+    );
+    bag.position.set(-14 + i * 1.2, 0.22, 10);
+    bag.rotation.y = (i % 2 ? 0.15 : -0.1);
+    group.add(bag);
+  }
+  // Bunting between the floodlight poles: a string of small warm
+  // bulbs that sways over the set at night, so the lot reads as a
+  // party even when the cameras are off.
+  const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffe9a8 });
+  for (let i = 0; i <= 9; i++) {
+    const t = i / 9;
+    const bx = -8 + t * 18;
+    const by = 6.2 - Math.sin(t * Math.PI) * 1.1;
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.16, 6, 5), bulbMat);
+    bulb.position.set(bx, by, 4);
+    group.add(bulb);
+  }
+  group.position.set(-285, 0, 90);
+  scene.add(group);
+  return group;
+}
+
 // The south beach: the sand strip behind the resort pool, where the
 // buggy hides and the sun sets over the water.
 export const SOUTH_BEACH_SPOTS = [

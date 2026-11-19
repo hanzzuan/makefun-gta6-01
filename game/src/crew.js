@@ -12,11 +12,12 @@ import { dist2D } from './util.js';
 
 export const CREW_HANGOUT_RADIUS = 14;
 
-// The five hands Mara can hire. Each one changes how the city plays:
+// The six hands Mara can hire. Each one changes how the city plays:
 // the driver is speed, the hacker is quiet, the lookout is eyes, the
 // fourth hand, Rook, is the negotiator who makes every job pay — and
 // the fifth, Ink, is the Mural Row artist who tags the walls for her
-// and paints the crew's rides gold.
+// and paints the crew's rides gold. The sixth, Jax, is the backlot
+// stunt driver: every jump pays more, and the slow-mo holds longer.
 export const CREW = [
   {
     id: 'dee',
@@ -58,13 +59,21 @@ export const CREW = [
     blurb: 'The Mural Row artist. He tags the walls for Mara — every wall pays $250 more with him on the crew, and the gold spray paint is his.',
     perk: 'Graffiti pays +$250 per wall',
   },
+  {
+    id: 'jax',
+    name: 'Jax \u201cAirtime\u201d Cole',
+    role: 'stunt',
+    cost: 5000,
+    blurb: 'Ex-stunt driver from the Solmar backlot. Every jump pays 25% more with him on the crew, and the slow-mo holds a beat longer on big air.',
+    perk: 'Stunt jumps pay +25% · longer slow-mo',
+  },
 ];
 
 export function makeCrewState() {
   return {
     hired: [], // crew ids, in hire order
     jobs: 0, // missions finished with a full crew beside Mara
-    levels: { dee: 1, nix: 1, sable: 1, rook: 1, ink: 1 }, // training level 1 to 3 per hand
+    levels: { dee: 1, nix: 1, sable: 1, rook: 1, ink: 1, jax: 1 }, // training level 1 to 3 per hand
   };
 }
 
@@ -133,6 +142,13 @@ export function crewBountyBonus(state) {
 export function crewGraffitiBonus(state) {
   if (!state || !state.hired) return 0;
   return state.hired.includes('ink') ? 250 : 0;
+}
+
+// Jax the stunt driver: every jump pays 25% more with him on the crew.
+// Returns the multiplier on a jump reward, 1.25 hired, 1 otherwise.
+export function crewStuntBonus(state) {
+  if (!state || !state.hired) return 1;
+  return state.hired.includes('jax') ? 1.25 : 1;
 }
 
 export function crewById(id) {
@@ -234,7 +250,12 @@ export function crewSummary(state) {
     return 'Nobody on the crew yet. Hire a hand and Solmar gets smaller.';
   }
   const names = state.hired.map((id) => crewById(id).name).join(', ');
-  return 'On the crew: ' + names + '. Jobs with a full crew: ' + state.jobs + '.';
+  // Jax talks jumps whenever he is on the crew: the ramp line, the
+  // chain window, and the slow-mo — the stunt driver's whole sermon.
+  const tip = state.hired.includes('jax')
+    ? ' Jax says: hit the ramp flat out, along its line — and chain the next jump inside twenty seconds, or the combo is gone.'
+    : '';
+  return 'On the crew: ' + names + '. Jobs with a full crew: ' + state.jobs + '.' + tip;
 }
 
 // The HUD line under the objective: the crew at a glance, with each
@@ -244,11 +265,20 @@ export function crewStatusLine(state) {
   const tags = state.hired.map((id) => {
     const c = crewById(id);
     const lv = crewLevel(state, id);
+    // Every hand reads its own tag: the driver on speed, the hacker on
+    // cool-down, the lookout on eyes, the negotiator on payout, the
+    // artist on paint, and Jax on the air — no hand wears another's tag.
     return c.role === 'driver'
       ? 'DEE Lv' + lv + ' +' + (6 + 6 * lv) + '% speed'
       : c.role === 'hacker'
         ? 'NIX Lv' + lv + ' ' + (1 + lv) + 'x cool-down'
-        : 'SABLE Lv' + lv + ' eyes';
+        : c.role === 'lookout'
+          ? 'SABLE Lv' + lv + ' eyes'
+          : c.role === 'negotiator'
+            ? 'ROOK Lv' + lv + ' +15% payout'
+            : c.role === 'artist'
+              ? 'INK Lv' + lv + ' +$250 per wall'
+              : 'JAX Lv' + lv + ' +25% jump pay';
   });
   return 'CREW · ' + tags.join(' · ');
 }

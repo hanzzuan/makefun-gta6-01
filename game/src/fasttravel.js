@@ -36,6 +36,7 @@ export const FAST_TRAVEL_STOPS = [
   { key: 'dockside', name: 'Dockside Pier', fare: 90, blurb: 'The lighthouse pier — Mara\u2019s signal run' },
   { key: 'cannery', name: 'Sunset Cannery', fare: 100, blurb: 'The cannery floor, and the harbor enforcers' },
   { key: 'mural-row', name: 'Mural Row', fare: 60, blurb: 'The art crowd rides here now — twelve walls, one gold can' },
+  { key: 'film-lot', name: 'Solmar Film Lot', fare: 95, blurb: 'The backlot on the beach — ramps, cameras, and the stunt crew' },
 ];
 
 export const FAST_TRAVEL_MAX_WANTED = 2; // the rank will not take a 3-star fare
@@ -150,5 +151,8 @@ export function fastTravelStatusLine(state) {
 // The toast line when a ride lands: short, and it names the stop.
 export function fastTravelArrivedLine(stop, fare) {
   if (fare === 0) return stop.name + ' — on the club\u2019s name, no fare.';
+  // The film lot gets its own arrival: the cab drops Mara at the set,
+  // and the stunt crew is already waving her in.
+  if (stop.key === 'film-lot') return stop.name + ' — the cab drops you at the backlot gate. The cameras are rolling. Fare $' + fare + '.';
   return stop.name + ' — the cab drops you off. Fare $' + fare + '.';
 }

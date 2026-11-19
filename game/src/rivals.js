@@ -47,7 +47,38 @@ export function rivalTauntFor(kind) {
   if (kind === 'showroom') return 'Rocco: "Nice collection, Voss. Shame it is all going to be mine."';
   if (kind === 'job') return 'Rocco: "Running errands now? The big jobs still belong to us."';
   if (kind === 'bounty') return 'Rocco: "Hunting for the PD now? The Ghost will eat you alive, Voss."';
+  if (kind === 'stunt') return 'Rocco: "You call that a jump, Voss? My runners clear the runway blindfolded."';
   return rivalTaunt();
+}
+
+// The stunt duel: Rocco's runners post a jump score, and Mara has two
+// minutes to beat it off any ramp. Returns the challenge, the win, the
+// expiry, or null. Only fires once Mara has jumped at least once —
+// the runners do not duel a driver who has never left the ground.
+export function rivalStuntDuel(state, stuntState, dt, time) {
+  if (!state || !stuntState) return null;
+  if (stuntState.jumps < 1) return null;
+  if (state.duel) {
+    const d = state.duel;
+    if (time > d.until) {
+      state.duel = null;
+      state.duelTimer = 120 + Math.random() * 120;
+      return { type: 'duel-expired', score: d.score };
+    }
+    const landing = stuntState.lastLanding;
+    if (landing && landing.time > d.at && landing.score > d.score) {
+      state.duel = null;
+      state.duelTimer = 150 + Math.random() * 120;
+      return { type: 'duel-won', score: d.score, landingScore: landing.score };
+    }
+    return null;
+  }
+  state.duelTimer -= dt;
+  if (state.duelTimer > 0) return null;
+  state.duelTimer = 120 + Math.random() * 120;
+  const score = 120 + Math.floor(Math.random() * 120);
+  state.duel = { score, at: time, until: time + 120 };
+  return { type: 'duel', score };
 }
 
 export function makeRivalState() {
@@ -60,6 +91,8 @@ export function makeRivalState() {
     wrecked: 0, // chases Mara ended by wrecking the rivals
     total: 0,
     tagWarTimer: 150, // seconds until Rocco's runners spray over a finished wall
+    duel: null, // the rival's posted jump score, if a stunt duel is live
+    duelTimer: 120, // seconds until Rocco's runners post their next jump score
   };
 }
 

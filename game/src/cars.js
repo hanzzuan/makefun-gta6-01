@@ -241,11 +241,12 @@ export function buildCarMesh(color, kind) {
 }
 
 // Headlights burn bright after dark and dim to a dull glow by day.
-export function updateCarLights(car, night) {
+// Braking flares the tail lights full red — the car behind you knows.
+export function updateCarLights(car, night, braking) {
   const head = car.mesh.userData.headMat;
   const tail = car.mesh.userData.tailMat;
   if (head) head.color.setHex(night ? 0xfff6c8 : 0x8a8268);
-  if (tail) tail.color.setHex(night ? 0xff2a2a : 0x7a2a2a);
+  if (tail) tail.color.setHex(braking ? 0xff0000 : night ? 0xff2a2a : 0x7a2a2a);
 }
 
 export function makeCar(kind, x, z, heading, color) {
@@ -336,8 +337,10 @@ export function spawnTrafficCar(scene, colliders) {
 }
 
 // One traffic car follows its lane; at an intersection it sometimes turns.
-export function updateTrafficCar(car, dt, allCars) {
-  const speed = car.targetSpeed;
+// Wet roads slow the whole city down — traffic runs about 15% slower
+// in the rain, like it does on a real coast road.
+export function updateTrafficCar(car, dt, allCars, rain) {
+  const speed = car.targetSpeed * (1 - (rain || 0) * 0.15);
   const step = speed * dt;
   // Slow down if a car is close ahead on the same lane.
   let ahead = 1e9;
@@ -392,21 +395,28 @@ export function updateTrafficCar(car, dt, allCars) {
 
 // --- player driving ----------------------------------------------------------
 
-export function updatePlayerCar(car, axes, dt, handbrake, colliders, onCollide, speedMult) {
+export function updatePlayerCar(car, axes, dt, handbrake, colliders, onCollide, speedMult, wet) {
   const accel = axes.y;
   const steerInput = axes.x;
   const maxSpeed = car.maxSpeed;
   const reverseMax = 10;
+  // Wet roads: the grip is gone after the rain. The tyres let go
+  // sooner, the brakes take longer, and the top speed drops a touch —
+  // a wet Solmar drives like a different city.
+  const wetGrip = clamp(1 - (wet || 0) * 0.45, 0.55, 1);
+  const wetBrake = 1 - (wet || 0) * 0.35;
   // Spiked tires: the car limps along until the timer runs out.
   car.spikeSlow = Math.max(0, (car.spikeSlow || 0) - dt);
   // Dee the driver makes every getaway car faster: the crew's speed
   // multiplier lifts the top speed, defaulting to 1 with no driver.
   const topSpeed = (car.spikeSlow > 0 ? 10 : maxSpeed) * (speedMult || 1);
+  // Braking lights up the tail: S while rolling forward, or the handbrake.
+  car.braking = (accel < 0 && car.speed > 0.5) || !!handbrake;
   // Trucks are sluggish off the line; bikes snap forward.
   const accelFactor = car.kind === 'truck' ? 0.6 : car.kind === 'bus' ? 0.55 : car.kind === 'motorcycle' ? 1.3 : car.kind === 'coupe' ? 1.15 : car.kind === 'pickup' ? 0.85 : 1;
-  if (accel > 0) car.speed += 22 * accelFactor * accel * dt;
+  if (accel > 0) car.speed += 22 * accelFactor * accel * dt * (0.85 + wetGrip * 0.15);
   else if (accel < 0) {
-    if (car.speed > 0.5) car.speed -= 34 * dt; // brake
+    if (car.speed > 0.5) car.speed -= 34 * wetBrake * dt; // brake — longer on wet roads
     else car.speed -= 12 * dt; // reverse
   } else {
     car.speed -= Math.sign(car.speed) * 9 * dt;
@@ -421,8 +431,20 @@ export function updatePlayerCar(car, axes, dt, handbrake, colliders, onCollide, 
   const steerRate = car.kind === 'motorcycle' ? 2.7 : car.kind === 'coupe' ? 2.2 : car.kind === 'truck' ? 1.35 : car.kind === 'bus' ? 1.1 : car.kind === 'pickup' ? 1.7 : 1.9;
   const turnRate = car.steer * steerRate * clamp(Math.abs(car.speed) / 10, 0.25, 1);
   car.heading += turnRate * dt * (car.speed >= 0 ? 1 : -1);
-  const nx = car.x + Math.sin(car.heading) * car.speed * dt;
-  const nz = car.z + Math.cos(car.heading) * car.speed * dt;
+  // Drift: hard steering at speed — or the handbrake — slides the tail
+  // out. The car's velocity points a little off its nose while it
+  // drifts, and the tyres scrub speed, so a slide costs momentum. On
+  // wet roads the tail steps out sooner, at lower speed, and slides
+  // further — the drift is easier to start and harder to hold.
+  const driftSpeed = 18 - (wet || 0) * 5;
+  const driftWant = (Math.abs(car.steer) > 0.55 * wetGrip && Math.abs(car.speed) > driftSpeed) || (handbrake && Math.abs(car.speed) > 14 - (wet || 0) * 4);
+  car.drift = lerp(car.drift || 0, driftWant ? 1 : 0, Math.min(1, dt * (driftWant ? 5 : 3)));
+  car.driftAngle = lerp(car.driftAngle || 0, -car.steer * (0.38 + (wet || 0) * 0.12) * car.drift, Math.min(1, dt * 6));
+  car.drifting = car.drift > 0.5;
+  if (car.drifting) car.speed -= Math.sign(car.speed) * 3.5 * dt;
+  const moveHeading = car.heading + (car.driftAngle || 0);
+  const nx = car.x + Math.sin(moveHeading) * car.speed * dt;
+  const nz = car.z + Math.cos(moveHeading) * car.speed * dt;
   if (hitsBuilding(colliders, nx, nz, 2.2)) {
     car.speed *= -0.25;
     if (onCollide) onCollide(Math.abs(car.speed));

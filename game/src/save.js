@@ -42,8 +42,8 @@ export function defaultSave() {
     property: { owned: [] },
     radio: { station: 0, switches: 0 },
     rivals: { escaped: 0, wrecked: 0, total: 0 },
-    events: { stats: { roadworks: 0, parade: 0, checkpoint: 0, festival: 0, fireworks: 0, 'casino-night': 0, 'club-night': 0, 'street-race': 0, showroom: 0, market: 0, airshow: 0, 'street-art': 0, 'mural-tour': 0 }, total: 0 },
-    crew: { hired: [], jobs: 0, levels: { dee: 1, nix: 1, sable: 1, rook: 1, ink: 1 } },
+    events: { stats: { roadworks: 0, parade: 0, checkpoint: 0, festival: 0, fireworks: 0, 'casino-night': 0, 'club-night': 0, 'street-race': 0, showroom: 0, market: 0, airshow: 0, 'street-art': 0, 'mural-tour': 0, 'stunt-show': 0 }, total: 0 },
+    crew: { hired: [], jobs: 0, levels: { dee: 1, nix: 1, sable: 1, rook: 1, ink: 1, jax: 1 } },
     casino: { won: 0, lost: 0, biggest: 0, hands: 0, spins: 0 },
     nightclub: { owned: false, rep: 0, bouncers: 0, income: 0, sets: 0, bestCombo: 0, lastIncomeDay: -1 },
     fasttravel: { trips: 0, spent: 0, freeTrips: 0, lastStop: null },
@@ -60,6 +60,9 @@ export function defaultSave() {
     // Street art: finished walls, coats laid on unfinished ones, and
     // whether the twelfth wall already paid its $5,000 set bonus.
     graffiti: { done: [], coats: {}, earned: 0, setPaid: false, perfectStreak: 0 },
+    // Stunt jumps: which ramps Mara has cleared, the best air off
+    // each one, and whether the eight-ramp set already paid its bonus.
+    stunts: { jumped: [], bestAirByRamp: {}, bestAir: 0, bestScore: 0, jumps: 0, earned: 0, setPaid: false },
     tokensTaken: [],
   };
 }
@@ -137,17 +140,17 @@ export function normalizeSave(raw) {
   d.property = { owned: [] };
   if (Array.isArray(property.owned)) {
     for (const id of property.owned) {
-      if (id === 'marina-loft' || id === 'harbor-penthouse' || id === 'stadium-suite' || id === 'casino-suite' || id === 'resort-villa' || id === 'club-penthouse' || id === 'lighthouse-cottage' || id === 'airport-hangar' || id === 'campus-dorm' || id === 'bounty-office') {
+      if (id === 'marina-loft' || id === 'harbor-penthouse' || id === 'stadium-suite' || id === 'casino-suite' || id === 'resort-villa' || id === 'club-penthouse' || id === 'lighthouse-cottage' || id === 'airport-hangar' || id === 'campus-dorm' || id === 'bounty-office' || id === 'film-studio' || id === 'stunt-garage' || id === 'sunset-penthouse') {
         d.property.owned.push(id);
       }
     }
   }
   // Radio: persist() writes { station, switches }; an old save may
-  // hold a bare station number instead — both shapes load. Eight
-  // stations now (Street FM joined the dial), so it runs 0..7.
+  // hold a bare station number instead — both shapes load. Nine
+  // stations now (Reel FM joined the dial), so it runs 0..8.
   const radio = raw.radio && typeof raw.radio === 'object' ? raw.radio : {};
   d.radio = {
-    station: asInt(radio.station !== undefined ? radio.station : raw.radio, 0, 0, 7),
+    station: asInt(radio.station !== undefined ? radio.station : raw.radio, 0, 0, 8),
     switches: asInt(radio.switches, 0, 0, 99999),
   };
   // Rivals: persist() writes { escaped, wrecked, total } — keep those
@@ -163,7 +166,7 @@ export function normalizeSave(raw) {
   const events = raw.events && typeof raw.events === 'object' ? raw.events : {};
   const eventStats = events.stats && typeof events.stats === 'object' ? events.stats : {};
   d.events = { stats: {}, total: asInt(events.total, 0, 0, 99999) };
-  for (const k of ['roadworks', 'parade', 'checkpoint', 'festival', 'fireworks', 'casino-night', 'club-night', 'street-race', 'showroom', 'market', 'airshow', 'bounty-hunt', 'street-art', 'mural-tour']) {
+  for (const k of ['roadworks', 'parade', 'checkpoint', 'festival', 'fireworks', 'casino-night', 'club-night', 'street-race', 'showroom', 'market', 'airshow', 'bounty-hunt', 'street-art', 'mural-tour', 'stunt-show']) {
     d.events.stats[k] = asInt(eventStats[k], 0, 0, 99999);
   }
   // The crew: only known hand ids survive a hand-edited save, and
@@ -171,16 +174,16 @@ export function normalizeSave(raw) {
   // fourth hand — a save from before he existed loads without him,
   // and a hired Rook survives a reload like the other three.
   const crew = raw.crew && typeof raw.crew === 'object' ? raw.crew : {};
-  d.crew = { hired: [], jobs: asInt(crew.jobs, 0, 0, 99999), levels: { dee: 1, nix: 1, sable: 1, rook: 1, ink: 1 } };
+  d.crew = { hired: [], jobs: asInt(crew.jobs, 0, 0, 99999), levels: { dee: 1, nix: 1, sable: 1, rook: 1, ink: 1, jax: 1 } };
   if (Array.isArray(crew.hired)) {
     for (const id of crew.hired) {
-      if ((id === 'dee' || id === 'nix' || id === 'sable' || id === 'rook' || id === 'ink') && !d.crew.hired.includes(id)) {
+      if ((id === 'dee' || id === 'nix' || id === 'sable' || id === 'rook' || id === 'ink' || id === 'jax') && !d.crew.hired.includes(id)) {
         d.crew.hired.push(id);
       }
     }
   }
   if (crew.levels && typeof crew.levels === 'object') {
-    for (const id of ['dee', 'nix', 'sable', 'rook', 'ink']) {
+    for (const id of ['dee', 'nix', 'sable', 'rook', 'ink', 'jax']) {
       d.crew.levels[id] = asInt(crew.levels[id], 1, 1, 3);
     }
   }
@@ -206,13 +209,14 @@ export function normalizeSave(raw) {
     bestCombo: asInt(nightclub.bestCombo, 0, 0, 99999),
     lastIncomeDay: asInt(nightclub.lastIncomeDay, -1, -1, 999999),
     // Club upgrades used to be dropped by this normalization, so every
-    // bought upgrade vanished on reload — keep the five flags now.
+    // bought upgrade vanished on reload — keep the six flags now.
     upgrades: {
       sound: !!(nightclub.upgrades && nightclub.upgrades.sound === true),
       lounge: !!(nightclub.upgrades && nightclub.upgrades.lounge === true),
       sign: !!(nightclub.upgrades && nightclub.upgrades.sign === true),
       backroom: !!(nightclub.upgrades && nightclub.upgrades.backroom === true),
       mural: !!(nightclub.upgrades && nightclub.upgrades.mural === true),
+      screen: !!(nightclub.upgrades && nightclub.upgrades.screen === true),
     },
   };
   // The taxi rank: rides taken, fares paid, and the last stop.
@@ -291,6 +295,29 @@ export function normalizeSave(raw) {
   d.graffiti.earned = asInt(graffiti.earned, 0, 0, 999999999);
   d.graffiti.setPaid = graffiti.setPaid === true;
   d.graffiti.perfectStreak = asInt(graffiti.perfectStreak, 0, 0, 999);
+  // Stunt jumps: only known ramp ids survive a hand-edited save, and
+  // airtimes are clamped to what a real jump can reach — the board
+  // cannot claim a ten-second flight off the plaza kicker.
+  const stunts = raw.stunts && typeof raw.stunts === 'object' ? raw.stunts : {};
+  d.stunts = { jumped: [], bestAirByRamp: {}, bestAir: 0, bestScore: 0, jumps: 0, earned: 0, setPaid: false };
+  const knownRamps = ['runway', 'film-lot', 'stadium', 'mall', 'harbor', 'plaza', 'marina', 'campus'];
+  if (Array.isArray(stunts.jumped)) {
+    for (const id of stunts.jumped) {
+      if (knownRamps.includes(id) && !d.stunts.jumped.includes(id)) d.stunts.jumped.push(id);
+    }
+  }
+  if (stunts.bestAirByRamp && typeof stunts.bestAirByRamp === 'object') {
+    for (const id of knownRamps) {
+      const n = asNumber(stunts.bestAirByRamp[id], 0, 0, 2);
+      if (n > 0) d.stunts.bestAirByRamp[id] = n;
+    }
+  }
+  d.stunts.bestAir = asNumber(stunts.bestAir, 0, 0, 2);
+  d.stunts.bestScore = asInt(stunts.bestScore, 0, 0, 99999);
+  d.stunts.jumps = asInt(stunts.jumps, 0, 0, 99999);
+  d.stunts.earned = asInt(stunts.earned, 0, 0, 999999999);
+  d.stunts.setPaid = stunts.setPaid === true;
+  d.stunts.bestCombo = asInt(stunts.bestCombo, 0, 0, 9999);
   // Taken sunset tokens: indices into the twelve spots, 0..11.
   d.tokensTaken = [];
   if (Array.isArray(raw.tokensTaken)) {

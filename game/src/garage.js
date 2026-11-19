@@ -25,6 +25,9 @@ export const GARAGE_PAINTS = [
   { name: 'Spray Gold', hex: 0xffc300 }, // the gold spray-can paint — the colour of a finished wall
   { name: 'Comet Silver', hex: 0xc8c8d0 },
   { name: 'Bay Blue', hex: 0x2e6ab0 },
+  { name: 'Reel Silver', hex: 0xc0c8d0 }, // the film lot's silver-screen paint — the colour of a premiere night
+  { name: 'Stunt Orange', hex: 0xff7a1a }, // the ramps' own orange — the colour of a jump
+  { name: 'Backlot Black', hex: 0x0e0e12 }, // the film lot at midnight, matte and unmarked
 ];
 
 export const GARAGE_ENGINE_LEVELS = [
@@ -32,6 +35,10 @@ export const GARAGE_ENGINE_LEVELS = [
   { level: 1, name: 'Street Tune', cost: 800, topSpeedBonus: 4 },
   { level: 2, name: 'Race Cams', cost: 1500, topSpeedBonus: 9 },
   { level: 3, name: 'Turbo Kit', cost: 2400, topSpeedBonus: 15 },
+  // The backlot's own tune: built for the runway jump, not the quarter
+  // mile — the top speed is the highest in the garage, and the launch
+  // off a ramp carries further on it.
+  { level: 4, name: 'Stunt Spec', cost: 3200, topSpeedBonus: 20 },
 ];
 
 export const GARAGE_ARMOUR_LEVELS = [
@@ -108,7 +115,7 @@ export function garageFromSave(saved) {
   if (!saved || typeof saved !== 'object') return g;
   const paint = Number(saved.paint);
   if (Number.isFinite(paint)) g.paint = paint;
-  g.engine = Math.max(0, Math.min(3, Number(saved.engine) || 0));
+  g.engine = Math.max(0, Math.min(4, Number(saved.engine) || 0));
   g.armour = Math.max(0, Math.min(3, Number(saved.armour) || 0));
   g.spent = Math.max(0, Number(saved.spent) || 0);
   g.nitro = Math.max(0, Math.min(1, Number(saved.nitro) || 0));
@@ -147,7 +154,7 @@ export function applyPaint(carMesh, hex) {
 
 // Engine tuning: each level adds top speed and a little acceleration.
 export function engineBonus(engineLevel) {
-  const level = GARAGE_ENGINE_LEVELS[Math.max(0, Math.min(3, engineLevel | 0))];
+  const level = GARAGE_ENGINE_LEVELS[Math.max(0, Math.min(4, engineLevel | 0))];
   return level ? level.topSpeedBonus : 0;
 }
 
@@ -228,7 +235,7 @@ export function garageMenuItems(garage, money) {
     id: 'engine',
     kind: 'engine',
     label: engineCost === null
-      ? 'Engine — Turbo Kit (max)'
+      ? 'Engine — ' + GARAGE_ENGINE_LEVELS[garage.engine].name + ' (max)'
       : `Engine — ${GARAGE_ENGINE_LEVELS[garage.engine + 1].name}`,
     cost: engineCost === null ? 0 : engineCost,
     owned: engineCost === null,
@@ -255,6 +262,16 @@ export function garageMenuItems(garage, money) {
     cost: nitroCost === null ? 0 : nitroCost,
     owned: nitroCost === null,
     afford: nitroCost !== null && money >= nitroCost,
+  });
+  // The stunt board lives in the garage too: eight ramps, the best air
+  // on each, and the title ladder — one tap from the tuning bench.
+  items.push({
+    id: 'stunts',
+    kind: 'stunts',
+    label: 'Stunt board — eight ramps, best airtimes, the title ladder',
+    cost: 0,
+    owned: false,
+    afford: true,
   });
   return items;
 }

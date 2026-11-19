@@ -105,10 +105,39 @@ export const PROPERTIES = [
     x: -40, z: -40,
     blurb: 'A back-alley office with a wanted board on the wall — the fugitives come to you, eventually.',
   },
+  {
+    id: 'film-studio',
+    name: 'Film Studio',
+    price: 70000,
+    x: -285, z: 90,
+    blurb: 'The backlot studio on the beach — the ramps are yours, the cameras are yours, and the stunt crew answers to you.',
+  },
+  {
+    id: 'stunt-garage',
+    name: 'Stunt Garage',
+    price: 55000,
+    x: 155, z: -125,
+    blurb: 'A second garage by Venn\u2019s, built for the jump cars — reinforced frames, spare ramps, and a lift that never complains.',
+  },
+  {
+    id: 'sunset-penthouse',
+    name: 'Sunset Penthouse',
+    price: 90000,
+    x: -252, z: 40,
+    blurb: 'A penthouse above the boardwalk — the whole bay through the glass, and the sunset every single night.',
+  },
 ];
 
 export const RENT_PER_PROPERTY = 150;
 export const RENT_COOLDOWN = 90; // seconds between rent collections
+
+// The film studio pays its owner in air: owning the backlot studio
+// lifts every stunt reward by a quarter — the crew works for its own
+// boss, and the cameras are already rolling.
+export function propertyStuntMult(state) {
+  if (!state || !state.owned) return 1;
+  return state.owned.includes('film-studio') ? 1.25 : 1;
+}
 
 export function makePropertyState() {
   return {

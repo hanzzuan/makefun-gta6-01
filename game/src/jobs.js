@@ -32,6 +32,8 @@ export const JOB_KINDS = {
   tip: { name: 'Tip-Off', mult: 1.2, legs: 1, blurb: 'Drive a witness to the garage — they know where a fugitive hides, and Leo pays for the tip.' },
   tour: { name: 'Tour', mult: 1.4, legs: 2, blurb: 'Two stops showing tourists the murals and the marina — the city pays for the view.' },
   mural: { name: 'Mural Run', mult: 1.5, legs: 2, blurb: 'Two legs hauling paint and ladders for the Mural Row crew — the city pays for the colour.' },
+  stunt: { name: 'Stunt Run', mult: 1.7, legs: 1, blurb: 'Haul camera gear to a jump spot before the light goes — the film crew pays for speed.' },
+  film: { name: 'Film Run', mult: 2.0, legs: 2, blurb: 'Two legs between set locations with the film crew aboard — the backlot pays for the rush.' },
 };
 
 export const JOBS_BOARD_SIZE = 3;
@@ -76,6 +78,24 @@ function legTimeLimit(distance) {
   return Math.ceil(distance / 20) + 30;
 }
 
+// Stunt and film jobs run the backlot: the legs are set locations —
+// the film lot, the runway, the stadium, the plaza — not random stops.
+// The client is the one who pays: Jax posts the stunt runs, and the
+// director posts the film runs, so the board reads like the backlot.
+const FILM_JOB_STOPS = ['film-lot', 'runway', 'stadium', 'plaza', 'mall', 'marina'];
+const JOB_CLIENTS = {
+  delivery: 'Leo', pickup: 'Leo', escort: 'a client', rush: 'the dispatcher',
+  smuggle: 'a quiet voice', vip: 'a very rich client', tip: 'a witness',
+  tour: 'the tour company', mural: 'the Mural Row crew',
+  stunt: 'Jax the stunt driver', film: 'the film director',
+};
+function pickFilmStop(rng, avoidKeys) {
+  const pool = FILM_JOB_STOPS.filter((key) => !avoidKeys.includes(key));
+  const key = pool[Math.floor((rng ? rng() : Math.random()) * pool.length)];
+  const p = PLACES[key];
+  return { key, ...p };
+}
+
 function pickStop(rng, avoidKeys) {
   const pool = JOB_STOPS.filter((s) => !avoidKeys.includes(s.key));
   const stop = pool[Math.floor((rng ? rng() : Math.random()) * pool.length)];
@@ -93,12 +113,17 @@ function rollJob(rng) {
     ['rush', 2],
     ['smuggle', 1],
     ['vip', 1],
+    ['stunt', 2],
+    ['film', 1],
   ]);
   const legs = [];
   const used = ['garage'];
   const legCount = JOB_KINDS[kind].legs;
   for (let i = 0; i < legCount; i++) {
-    const stop = pickStop(random, used);
+    // Stunt and film jobs stay on the backlot: the legs are set
+    // locations, so a stunt run ends at a ramp and a film run moves
+    // between sets, never at a random stop across town.
+    const stop = (kind === 'stunt' || kind === 'film') ? pickFilmStop(random, used) : pickStop(random, used);
     used.push(stop.key);
     const from = i === 0 ? PLACES.garage : legs[i - 1].to;
     const distance = Math.round(dist2D(from.x, from.z, stop.x, stop.z));
@@ -114,6 +139,7 @@ function rollJob(rng) {
   return {
     id: kind + '-' + Math.floor(random() * 90000 + 10000),
     kind,
+    client: JOB_CLIENTS[kind] || 'Leo',
     legs,
     pay,
     stage: 0,
@@ -134,7 +160,7 @@ export function jobsBoardLine(state) {
   if (state.active) {
     const job = state.active;
     const leg = job.legs[job.stage];
-    return 'Job: ' + JOB_KINDS[job.kind].name + ' → ' + leg.to.name + (job.timer != null ? ' · ' + formatCountdown(job.timer) : '');
+    return 'Job: ' + JOB_KINDS[job.kind].name + ' for ' + (job.client || 'Leo') + ' → ' + leg.to.name + (job.timer != null ? ' · ' + formatCountdown(job.timer) : '');
   }
   return 'Jobs board: ' + state.offered.length + ' jobs pinned · ' + state.done + ' done';
 }

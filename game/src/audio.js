@@ -127,6 +127,17 @@ export const sfx = {
   rumor() { blip(330, 0.12, 'sine', 0.15, 280); setTimeout(() => blip(294, 0.12, 'sine', 0.15), 130); },
   // A bounty taken: a two-note siren sting — the hunt is on, and Vex heard it too.
   bounty() { blip(440, 0.16, 'square', 0.2, 587); setTimeout(() => blip(587, 0.2, 'square', 0.2, 440), 140); },
+  // The stunt kit: a launch whoosh that rises with the car, a landing
+  // thud, the tyre screech of a drift, a mission-start sting, and the
+  // fanfare for a record jump — all synthesized, no audio files.
+  jump() { blip(300, 0.35, 'sine', 0.25, 900); },
+  land() { noiseBurst(0.18, 0.4, 300); blip(80, 0.2, 'sawtooth', 0.25, 40); },
+  // A record jump: a rising arpeggio over the landing thud — the
+  // backlot hears this one before the radio does.
+  record() { noiseBurst(0.18, 0.4, 300); [660, 880, 1108, 1319].forEach((f, i) => setTimeout(() => blip(f, 0.16, 'triangle', 0.25), i * 80)); },
+  screech() { noiseBurst(0.35, 0.16, 2600); },
+  sting() { [392, 523, 659, 784].forEach((f, i) => setTimeout(() => blip(f, 0.25, 'triangle', 0.22), i * 90)); },
+  fanfare() { [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => blip(f, 0.2, 'triangle', 0.25), i * 100)); },
   // A spray can: a short hiss of propellant, then a soft tick as the
   // nozzle clears — the sound of a wall changing colour.
   spray() { blip(1800, 0.03, 'square', 0.04); },

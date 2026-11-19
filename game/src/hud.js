@@ -152,13 +152,16 @@ export function showStart(save, onStart) {
     '<div class="panel">' +
     '<h1>SOLMAR</h1><h2>SUNSET STREETS</h2>' +
     '<p>Mara Voss is back in Solmar. Her brother\u2019s garage owes Dario Venn ' +
-    '$50,000. Eleven jobs stand between Mara and a clean slate — if the ' +
+    '$50,000. Forty-four jobs stand between Mara and a clean slate — if the ' +
     'Solmar PD doesn\u2019t catch her first.</p>' +
+    '<p style="font-size:14px;color:#c9c4ef">After the story: eight stunt ramps around the city, a Stunt Legend ' +
+    'title to chase, and a film lot on the beach that pays for the air.</p>' +
     '<div class="keys"><b>WASD</b> move / drive &nbsp; <b>Shift</b> run &nbsp; ' +
     '<b>E</b> enter / exit car &nbsp; <b>Space</b> handbrake &nbsp; <b>C</b> sneak<br>' +
     '<b>Mouse click</b> shoot &nbsp; <b>F</b> punch &nbsp; <b>1 / 2</b> fists / pistol<br>' +
     '<b>G</b> garage (near Venn\u2019s Garage) &nbsp; <b>R</b> race (at a start marker)<br>' +
     '<b>N</b> radio &nbsp; <b>B</b> property (near a gold sign) &nbsp; <b>V</b> crew (at the safehouse) &nbsp; <b>X</b> casino (at the resort)<br>' +
+    '<b>Y</b> stunt board (at the garage) &nbsp; <b>U</b> bounty board (at the garage)<br>' +
     '<b>H</b> horn &nbsp; <b>Wheel</b> camera zoom &nbsp; <b>P</b> pause &nbsp; <b>M</b> mute &nbsp; progress saves automatically</div>' +
     '<button id="startbtn">' + (hasSave ? 'CONTINUE — $' + save.money : 'START THE STORY') + '</button>' +
     (hasSave ? '<div class="save">Saved progress found: ' + save.missionsDone + ' mission(s) done.</div>' : '') +
@@ -184,10 +187,11 @@ export function showPause(onResume, onRestart, stats) {
     'Garage spent: <b>$' + (s.garageSpent || 0).toLocaleString() + '</b><br>' +
     'Rival chases escaped: <b>' + (s.rivalsEscaped || 0) + '</b> · wrecked: <b>' + (s.rivalsWrecked || 0) + '</b><br>' +
     'Boat trips: <b>' + (s.boatTrips || 0) + '</b> · City events seen: <b>' + (s.eventsSeen || 0) + '</b><br>' +
-    'Crew hired: <b>' + (s.crewHired || 0) + ' / 5</b> · Casino: <b>' + (s.casinoGames || 0) + ' games</b><br>' +
+    'Crew hired: <b>' + (s.crewHired || 0) + ' / 6</b> · Casino: <b>' + (s.casinoGames || 0) + ' games</b><br>' +
     'Jobs done: <b>' + (s.jobsDone || 0) + '</b> · Rare cars in the showroom: <b>' + (s.rareCars || 0) + ' / 6</b><br>' +
-    'Packages found: <b>' + (s.packagesFound || 0) + ' / 10</b> · Bounties caught: <b>' + (s.bountyCaught || 0) + '</b>' + (s.bountyRank ? ' (' + s.bountyRank + ')' : '') + '<br>' +
-    'Walls sprayed: <b>' + (s.graffitiPieces || 0) + ' / 12</b>' + (s.graffitiTitle ? ' · ' + s.graffitiTitle : '') + '</div>' +
+    'Packages found: <b>' + (s.packagesFound || 0) + ' / 11</b> · Bounties caught: <b>' + (s.bountyCaught || 0) + '</b>' + (s.bountyRank ? ' (' + s.bountyRank + ')' : '') + '<br>' +
+    'Walls sprayed: <b>' + (s.graffitiPieces || 0) + ' / 12</b>' + (s.graffitiTitle ? ' · ' + s.graffitiTitle : '') + '<br>' +
+    'Stunt jumps: <b>' + (s.stuntJumps || 0) + '</b> · best air: <b>' + (s.stuntBestAir ? s.stuntBestAir.toFixed(2) + 's' : '—') + '</b>' + (s.stuntTitle ? ' · ' + s.stuntTitle : '') + (s.stuntBestCombo > 1 ? ' · best chain ' + s.stuntBestCombo + ' jumps' : '') + '</div>' +
     '<div><button id="resumebtn">RESUME</button> ' +
     '<button id="restartbtn" style="background:#ff8a5c">RESTART DAY</button></div></div>';
   document.getElementById('resumebtn').addEventListener('click', onResume);
@@ -415,7 +419,7 @@ export function showJobs(items, money, summary, onAccept, onClose) {
 }
 
 // --- the wanted board ---------------------------------------------------------------
-// The bounty board: the ten fugitives, their price and hideout, and
+// The bounty board: the eleven fugitives, their price and hideout, and
 // the hunt already running. Same shape as the jobs board — a row per
 // name, a TAKE button with the price — but the title is the PD's, and
 // the warning is Vex's four-minute clock.
@@ -485,6 +489,49 @@ export function showGraffiti(items, money, summary, onClose) {
     '<div style="text-align:left;display:inline-block;min-width:340px">' + rows + '</div>' +
     '<div><button id="graffiticlose">BACK TO THE STREETS</button></div></div>';
   document.getElementById('graffiticlose').addEventListener('click', onClose);
+}
+
+export function showStunts(items, money, summary, onClose) {
+  els.overlay.style.display = 'flex';
+  const rows = items.map((item) => {
+    const state = item.badge
+      ? '<span style="color:#ff7a1a">' + item.badge + '</span>'
+      : item.owned === undefined
+        ? ''
+        : item.owned
+          ? '<span style="color:#7dff8a">CLEARED ✓</span>'
+          : '<span style="color:#ffd23e">NOT JUMPED</span>';
+    return '<div style="display:flex;justify-content:space-between;gap:16px;margin:4px 0">' +
+      '<span>' + item.label + ' <small style="color:#c9c4ef">' + (item.sub || '') + '</small></span>' + state + '</div>';
+  }).join('');
+  els.overlay.innerHTML =
+    '<div class="panel"><h1 style="font-size:36px;color:#ff7a1a">STUNT JUMPS</h1>' +
+    '<p>' + summary + '</p>' +
+    '<p>Cash: <b>$' + money.toLocaleString() + '</b> — hit a ramp flat out (12+ m/s, along its line) and the car launches: airtime and entry speed set the score, and the cash is twice the score. Big air runs in slow motion. Clear all eight ramps for the $5,000 set bonus.</p>' +
+    '<div style="text-align:left;display:inline-block;min-width:340px">' + rows + '</div>' +
+    '<div><button id="stuntsclose">BACK TO THE STREETS</button></div></div>';
+  document.getElementById('stuntsclose').addEventListener('click', onClose);
+}
+
+// The mission title card: a big cinematic card that fades in when a
+// story mission starts, holds for a few seconds, and fades out on its
+// own — the film's title, not a toast.
+let titleTimer = null;
+export function showTitleCard(title, subtitle, reward) {
+  const card = document.getElementById('titlecard');
+  if (!card) return;
+  card.innerHTML = '<div class="t">' + title + '</div>' +
+    '<div class="s">' + (subtitle || '') + '</div>' +
+    (reward ? '<div class="r">PAYS $' + reward.toLocaleString() + '</div>' : '');
+  card.classList.add('show');
+  if (titleTimer) clearTimeout(titleTimer);
+  titleTimer = setTimeout(() => card.classList.remove('show'), 3600);
+}
+
+// The letterbox: two black bars that close in on big stunt air, so a
+// jump reads like a shot from a film.
+export function setLetterbox(on) {
+  document.body.classList.toggle('letterbox', !!on);
 }
 
 export function showBusted(onRetry) {
@@ -607,6 +654,17 @@ export function drawMinimap(world) {
       g.strokeStyle = '#1a1030';
       g.lineWidth = 1.5;
       g.strokeRect(rx - 4, ry - 4, 8, 8);
+    }
+  }
+  // Stunt ramps: orange triangles where the jumps are, so the next
+  // launch is always on the map.
+  if (world.stuntRamps) {
+    g.fillStyle = '#ff7a1a';
+    for (const r of world.stuntRamps) {
+      const [rx, ry] = toMap(r.x, r.z);
+      g.beginPath();
+      g.moveTo(rx, ry - 5); g.lineTo(rx + 5, ry + 4); g.lineTo(rx - 5, ry + 4);
+      g.closePath(); g.fill();
     }
   }
   // The harbor: a small diamond where the docks meet the sea.

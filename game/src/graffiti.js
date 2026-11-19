@@ -142,6 +142,47 @@ export function buildGraffitiWalls(scene, state) {
   return walls;
 }
 
+// A decorative wall for the film lot: a blank backlot wall in the same
+// shape as the spray walls, but not one of the twelve — the set's own
+// wall, for the cameras, not the count.
+export function buildFilmWall(scene, x, z) {
+  const group = new THREE.Group();
+  const panel = new THREE.Mesh(
+    new THREE.BoxGeometry(4.4, 2.6, 0.25),
+    new THREE.MeshStandardMaterial({ color: 0xc8b8a0, roughness: 0.95, metalness: 0 }),
+  );
+  panel.position.set(0, 1.3, 0);
+  panel.castShadow = true;
+  group.add(panel);
+  const stripe = new THREE.Mesh(
+    new THREE.BoxGeometry(4.0, 0.35, 0.06),
+    new THREE.MeshStandardMaterial({ color: 0xff7a1a, roughness: 0.9, metalness: 0 }),
+  );
+  stripe.position.set(0, 2.2, 0.16);
+  group.add(stripe);
+  // A clapperboard painted on the wall: the film lot's mark, so the
+  // wall reads as a set piece even before the first coat of paint.
+  const board = new THREE.Mesh(
+    new THREE.BoxGeometry(1.0, 0.7, 0.06),
+    new THREE.MeshStandardMaterial({ color: 0x14141a, roughness: 0.6 }),
+  );
+  board.position.set(-1.2, 1.1, 0.16);
+  group.add(board);
+  for (let i = 0; i < 3; i++) {
+    const clap = new THREE.Mesh(
+      new THREE.BoxGeometry(0.28, 0.12, 0.07),
+      new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.5 }),
+    );
+    clap.position.set(-1.55 + i * 0.35, 1.42, 0.16);
+    clap.rotation.z = 0.3;
+    group.add(clap);
+  }
+  group.position.set(x, 0, z);
+  group.rotation.y = Math.PI / 2;
+  scene.add(group);
+  return group;
+}
+
 // Recolour the walls to match the save: a finished piece shows its
 // three palette stripes, a half-finished one shows only the coats
 // laid so far, and an untouched wall stays pale brick.

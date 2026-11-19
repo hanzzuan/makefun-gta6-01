@@ -275,6 +275,62 @@ export const RACE_ROUTES = [
     payout: 2300,
     blurb: 'A flat-out sprint through the cannery yard and the container stacks — no room for a mistake.',
   },
+  {
+    id: 'stunt-circuit',
+    name: 'Stunt Circuit',
+    start: { x: 120, z: 272 },
+    checkpoints: [
+      { x: 210, z: 272 },
+      { x: 210, z: 215 },
+      { x: 315, z: 215 },
+      { x: 315, z: 140 },
+      { x: 315, z: 70 },
+      { x: 210, z: 70 },
+      { x: 210, z: 215 },
+      { x: 120, z: 272 },
+    ],
+    par: 75,
+    payout: 3200,
+    ramp: 'runway', // the start line IS the Runway Jump ramp — the race begins in the air
+    blurb: 'The film crew\u2019s circuit: the runway, the terminal road, and the east avenue back straight — the same straight the drive shot uses.',
+  },
+  {
+    id: 'film-lot-sprint',
+    name: 'Film Lot Sprint',
+    start: { x: -252, z: 0 },
+    checkpoints: [
+      { x: -245, z: 70 },
+      { x: -245, z: 140 },
+      { x: -175, z: 140 },
+      { x: -175, z: 70 },
+      { x: -175, z: 0 },
+      { x: -245, z: 0 },
+      { x: -252, z: 0 },
+    ],
+    par: 55,
+    payout: 2600,
+    blurb: 'Down the beachfront, past the film lot ramps, with the bay on the left and the cameras rolling.',
+  },
+  {
+    id: 'sunset-gp',
+    name: 'Sunset GP',
+    start: { x: 0, z: -40 },
+    checkpoints: [
+      { x: 70, z: -70 },
+      { x: 140, z: -70 },
+      { x: 140, z: 0 },
+      { x: 140, z: 70 },
+      { x: 70, z: 70 },
+      { x: 0, z: 70 },
+      { x: -70, z: 70 },
+      { x: -70, z: 0 },
+      { x: -70, z: -70 },
+      { x: 0, z: -40 },
+    ],
+    par: 70,
+    payout: 3500,
+    blurb: 'The grand prix of downtown: a full loop of the tower blocks at golden hour, ten gates, no brakes.',
+  },
 ];
 
 export function makeRaceState() {
@@ -305,6 +361,15 @@ export function raceFromSave(saved) {
 // The nearest race whose start marker the player is close to, or null.
 // The marker only shows when the player is in a car — races are for
 // drivers, not pedestrians.
+// A race that starts on a ramp begins in the air: the Stunt Circuit's
+// start line is the Runway Jump ramp itself, so the toast tells the
+// driver to jump before the clock even starts.
+export function raceRampLine(route) {
+  if (!route || !route.ramp) return '';
+  const names = { runway: 'Runway Jump', 'film-lot': 'Film Lot Ramp', stadium: 'Stadium Leap' };
+  return ' The start line is the ' + (names[route.ramp] || route.ramp) + ' ramp — the race begins in the air.';
+}
+
 export function raceNearStart(x, z) {
   let found = null;
   let bestD = 22 * 22;

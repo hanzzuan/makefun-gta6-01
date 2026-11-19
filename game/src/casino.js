@@ -14,10 +14,11 @@ export const CASINO_RADIUS = 12;
 
 // The slot machine's reels. Three sevens is the jackpot; three of
 // anything else pays, and two cherries on the line gives the bet back.
-export const SLOT_SYMBOLS = ['🍒', '🔔', '⭐', '🎨', '💎', '7️⃣'];
+export const SLOT_SYMBOLS = ['🍒', '🔔', '⭐', '🎨', '💎', '7️⃣', '🎬'];
 export const SLOT_PAYTABLE = {
   '7️⃣': 25,
   '💎': 10,
+  '🎬': 6, // the film clapper — the backlot's own symbol, added when the film job opened
   '⭐': 5,
   '🎨': 4,
   '🔔': 3,
@@ -70,7 +71,11 @@ export function playSlots(state, bet) {
   if (win > 0) {
     state.won += win;
     if (win > state.biggest) state.biggest = win;
-    state.lastResult = reels.join(' ') + ' — WIN $' + win.toLocaleString() + ' on a $' + bet + ' spin!';
+    // Three clappers is the backlot jackpot: the paytable pays 6×, and
+    // the film lot's own line goes on the ticket — the house knows
+    // whose symbol it is.
+    const clapper = reels[0] === '🎬' && reels[1] === '🎬' && reels[2] === '🎬';
+    state.lastResult = reels.join(' ') + ' — WIN $' + win.toLocaleString() + ' on a $' + bet + ' spin!' + (clapper ? ' BACKLOT JACKPOT — the film lot pays out!' : '');
   } else {
     state.lost += bet;
     state.lastResult = reels.join(' ') + ' — no line. The house keeps $' + bet + '.';

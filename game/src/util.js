@@ -211,3 +211,20 @@ export function formatDuration(seconds) {
   const s = Math.max(0, Math.ceil(seconds));
   return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 }
+
+// An airtime in seconds, two decimals — the stunt board, the radio
+// callout and the landing toast all read the same number.
+export function formatAirtime(seconds) {
+  return Math.max(0, seconds).toFixed(2) + 's';
+}
+
+// How dark the city is, 0 by day to 1 at night, smooth across the
+// dawn and dusk edges — the headlight, the lamp glow and the music
+// mood all follow the same number.
+export function nightFactor(timeOfDay) {
+  const t = ((timeOfDay % 1) + 1) % 1;
+  if (t < 0.16 || t >= 0.88) return 1;
+  if (t >= 0.28 && t < 0.72) return 0;
+  if (t < 0.28) return 1 - (t - 0.16) / 0.12;
+  return (t - 0.72) / 0.16;
+}

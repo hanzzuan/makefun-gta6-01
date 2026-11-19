@@ -281,6 +281,7 @@ export function nearestPoliceDistance(cars, x, z) {
 // notices when a one-of-one goes missing.
 export const RARE_CAR_HEAT = 6;
 export const GRAFFITI_HEAT = 1; // a cop catching Mara mid-spray adds one star
+export const STUNT_HEAT = 2; // a cop watching Mara land a big jump adds two — reckless driving, on camera
 
 // Heat cools on its own when Mara stays clean: 1.5 heat per second
 // with no new crime, so a quiet drive home is a real way out.

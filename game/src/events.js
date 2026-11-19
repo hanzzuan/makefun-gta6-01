@@ -33,13 +33,28 @@ const EVENT_KINDS = [
   { kind: 'bounty-hunt', weight: 10, blurb: 'A bounty hunt is on — the PD wants a fugitive, Vex is already driving, and the reward is cash.' },
   { kind: 'street-art', weight: 10, blurb: 'A street-art fair at Mural Row — the taggers are out and the walls are open.' },
   { kind: 'mural-tour', weight: 8, blurb: 'A mural tour at Mural Row — a bus full of tourists, cameras out, and the walls are the show.' },
+  { kind: 'stunt-show', weight: 8, blurb: 'A stunt show at the film lot — the ramps are out and the crowd is gathering.' },
 ];
+
+// The stunt show's rotating bill: the backlot never runs the same
+// show twice — a different act, a different dare, every time the
+// crowd gathers at the film lot.
+export const STUNT_SHOW_BLURBS = [
+  'A stunt show at the film lot — the ramps are out and the crowd is gathering.',
+  'A stunt show at the film lot — tonight: the runway jump, live, and Mara Voss is doubling.',
+  'A stunt show at the film lot — the stunt crew is betting on the air, and the crowd is betting on Mara.',
+  'A stunt show at the film lot — two ramps, one car, and the cameras are rolling.',
+  'A stunt show at the film lot — DJ Marlow is on the loudspeaker and the crowd wants air.',
+];
+export function stuntShowBlurb() {
+  return STUNT_SHOW_BLURBS[Math.floor(Math.random() * STUNT_SHOW_BLURBS.length)];
+}
 
 export function makeEventState() {
   return {
     active: null, // { kind, x, z, left, props, clean, paid }
     timer: 50 + Math.random() * 40, // seconds until the next event
-    stats: { roadworks: 0, parade: 0, checkpoint: 0, festival: 0, fireworks: 0, 'casino-night': 0, 'club-night': 0, 'street-race': 0, showroom: 0, market: 0, airshow: 0, 'street-art': 0, 'mural-tour': 0 },
+    stats: { roadworks: 0, parade: 0, checkpoint: 0, festival: 0, fireworks: 0, 'casino-night': 0, 'club-night': 0, 'street-race': 0, showroom: 0, market: 0, airshow: 0, 'street-art': 0, 'mural-tour': 0, 'stunt-show': 0 },
     total: 0,
   };
 }
@@ -48,7 +63,7 @@ export function eventFromSave(saved) {
   const state = makeEventState();
   if (!saved || typeof saved !== 'object') return state;
   if (saved.stats && typeof saved.stats === 'object') {
-    for (const k of ['roadworks', 'parade', 'checkpoint', 'festival', 'fireworks', 'casino-night', 'club-night', 'street-race', 'showroom', 'market', 'airshow', 'street-art', 'mural-tour']) {
+    for (const k of ['roadworks', 'parade', 'checkpoint', 'festival', 'fireworks', 'casino-night', 'club-night', 'street-race', 'showroom', 'market', 'airshow', 'street-art', 'mural-tour', 'stunt-show']) {
       state.stats[k] = Math.max(0, Number(saved.stats[k]) || 0);
     }
   }
@@ -268,6 +283,32 @@ export function buildEventProps(scene, kind, x, z) {
     }
     cone(x - 10, z - 6);
     cone(x + 10, z - 6);
+  } else if (kind === 'stunt-show') {
+    // A stunt show at the film lot: two ramp wedges on the sand, a
+    // crowd along the rope line, and the film crew's cameras — the show
+    // runs while the ramps are out, and the crowd tips when Mara jumps.
+    for (const [wx, wz, wr] of [[x, z, -0.32], [x + 8, z + 4, -0.32]]) {
+      const wedge = new THREE.Mesh(
+        new THREE.BoxGeometry(3.4, 1.1, 5.2),
+        new THREE.MeshStandardMaterial({ color: 0xff7a1a, roughness: 0.7 }),
+      );
+      wedge.position.set(wx, 0.55, wz);
+      wedge.rotation.x = wr;
+      wedge.castShadow = true;
+      scene.add(wedge);
+      props.push(wedge);
+    }
+    // The rope line: two barriers holding the crowd back from the run-up.
+    barrier(x - 6, z + 14, 0);
+    barrier(x + 6, z + 14, 0);
+    for (let i = 0; i < 8; i++) {
+      const ped = spawnPedestrianAt(scene, x + rand(-14, 14), z + rand(6, 12), pick(['walker', 'tourist', 'guest', 'film-crew']));
+      ped.wait = 999;
+      ped.speed = 0;
+      props.push(ped.mesh);
+    }
+    cone(x - 10, z - 6);
+    cone(x + 10, z - 6);
   } else {
     // A festival: a crowd at the plaza and two food carts.
     for (let i = 0; i < 8; i++) {
@@ -340,7 +381,10 @@ export function updateEvents(state, dt, px, pz, wantedLevel, scene, peds) {
       // A street-art fair pays a tip when Mara is in the crowd: the
       // Mural Row visitors tip $100 for the colour when she is there.
       const artBonus = done.kind === 'street-art' && dist2D(px, pz, -100, -40) < 60 ? 100 : 0;
-      return { type: 'end', kind: done.kind, bonus: bonus + artBonus };
+      // A stunt show pays a tip when Mara is in the crowd: the film
+      // lot visitors tip $150 for the jumps when she is there.
+      const stuntBonus = done.kind === 'stunt-show' && dist2D(px, pz, -285, 90) < 60 ? 150 : 0;
+      return { type: 'end', kind: done.kind, bonus: bonus + artBonus + stuntBonus };
     }
     return null;
   }
@@ -355,7 +399,9 @@ export function updateEvents(state, dt, px, pz, wantedLevel, scene, peds) {
   // so the bursts hang above the water off the marina.
   const spot = pick.kind === 'parade'
     ? { x: 0, z: 0 }
-    : pick.kind === 'festival'
+    : pick.kind === 'stunt-show'
+      ? { x: -285, z: 90 }
+      : pick.kind === 'festival'
       ? (Math.random() < 0.4 ? { x: -128, z: 224 } : { x: 0, z: 0 })
       : pick.kind === 'casino-night'
         ? { x: -128, z: 224 }
@@ -371,7 +417,10 @@ export function updateEvents(state, dt, px, pz, wantedLevel, scene, peds) {
   };
   state.stats[pick.kind] = (state.stats[pick.kind] || 0) + 1;
   state.total += 1;
-  return { type: 'start', kind: pick.kind, x: spot.x, z: spot.z, blurb: pick.blurb };
+  // The stunt show never reads the same bill twice: the backlot
+  // rotates the act every time the crowd gathers.
+  const blurb = pick.kind === 'stunt-show' ? stuntShowBlurb() : pick.blurb;
+  return { type: 'start', kind: pick.kind, x: spot.x, z: spot.z, blurb };
 }
 
 // A one-line readout for the pause screen.

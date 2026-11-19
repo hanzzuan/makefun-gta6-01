@@ -188,15 +188,24 @@ export function updatePlayerOnFoot(player, axes, dt, running, cameraHeading, col
 }
 
 // Third-person chase camera: sits behind and above the target, looks ahead.
-export function updateCamera(camera, targetX, targetZ, heading, dt, distance, height, lookAhead) {
+export function updateCamera(camera, targetX, targetZ, heading, dt, distance, height, lookAhead, speedKmh) {
   const cx = targetX - Math.sin(heading) * distance;
   const cz = targetZ - Math.cos(heading) * distance;
   const desired = new THREE.Vector3(cx, height, cz);
   camera.position.lerp(desired, Math.min(1, dt * 5));
+  // Speed sensation: the field of view widens as the car goes faster,
+  // and the frame shudders a little at the top end — the road rushes.
+  const speed = speedKmh || 0;
+  const wantFov = 60 + Math.min(18, speed * 0.12);
+  if (Math.abs(camera.fov - wantFov) > 0.5) {
+    camera.fov = camera.fov + (wantFov - camera.fov) * Math.min(1, dt * 4);
+    camera.updateProjectionMatrix();
+  }
+  const shake = speed > 90 ? (speed - 90) * 0.0012 : 0;
   const look = new THREE.Vector3(
-    targetX + Math.sin(heading) * lookAhead,
-    1.6,
-    targetZ + Math.cos(heading) * lookAhead,
+    targetX + Math.sin(heading) * lookAhead + (Math.random() - 0.5) * shake,
+    1.6 + (Math.random() - 0.5) * shake * 0.5,
+    targetZ + Math.cos(heading) * lookAhead + (Math.random() - 0.5) * shake,
   );
   camera.lookAt(look);
 }
@@ -224,9 +233,13 @@ export function playerDisplayName() {
 export function randomSpawn() {
   // Fresh starts vary: half the time Mara wakes up at the garage,
   // half the time at the marina — the city looks different from the
-  // water, and the first job is never far from either.
-  if (Math.random() < 0.5) return { x: -70 + rand(-4, 4), z: 148 + rand(-4, 4) };
-  return { x: -238 + rand(-4, 4), z: 175 + rand(-4, 4) };
+  // water, and the first job is never far from either. Once in a
+  // while she wakes up at the film lot, where the stunt crew left
+  // the coffee on and the ramps out.
+  const roll = Math.random();
+  if (roll < 0.45) return { x: -70 + rand(-4, 4), z: 148 + rand(-4, 4) };
+  if (roll < 0.9) return { x: -238 + rand(-4, 4), z: 175 + rand(-4, 4) };
+  return { x: -285 + rand(-4, 4), z: 90 + rand(-4, 4) };
 }
 
 // Fast travel drops Mara on her feet: clamp the landing spot inside

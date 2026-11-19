@@ -1,6 +1,6 @@
-// packages.js — ten hidden packages stashed around Solmar, GTA-style.
+// packages.js — eleven hidden packages stashed around Solmar, GTA-style.
 // Each one pays $500 the moment Mara walks over it, and finding all
-// ten pays a $5,000 bonus plus a permanent +10% on every job board
+// eleven pays a $5,000 bonus plus a permanent +10% on every job board
 // payout. The packages are small gold crates that catch the light;
 // the pause menu shows how many are left, and the board at the garage
 // lists a hint for every one still out there.
@@ -27,6 +27,7 @@ export const HIDDEN_PACKAGES = [
   { id: 'harbor-crates', name: 'Harbor Package', x: -200, z: -120, hint: 'Between the crates at the north harbor freight yard.' },
   { id: 'club-alley', name: 'Club Package', x: -70, z: -60, hint: 'In Neon Alley behind Club Neon, by the bins.' },
   { id: 'resort-pool', name: 'Resort Package', x: -150, z: 220, hint: 'Behind the resort pool house, where the towels are.' },
+  { id: 'film-lot', name: 'Film Lot Package', x: -285, z: 90, hint: 'Behind the film lot camera crane, where the stunt crew parks.' },
 ];
 
 export function makePackagesState() {
@@ -74,7 +75,9 @@ export function pulsePackageMeshes(meshes, time) {
 }
 
 // Walk over a crate and it is yours: $500 now, $5,000 more when the
-// tenth one lands, and the job board pays 10% extra forever after.
+// eleventh one lands, and the job board pays 10% extra forever after.
+// The eleventh hides behind the film lot camera crane, where the
+// stunt crew parks.
 export function updatePackages(state, px, pz) {
   for (const pkg of HIDDEN_PACKAGES) {
     if (state.found.includes(pkg.id)) continue;

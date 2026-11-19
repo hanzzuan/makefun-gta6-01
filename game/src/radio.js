@@ -64,7 +64,42 @@ export const RADIO_STATIONS = [
     mood: 'day',
     freq: '95.6',
   },
+  {
+    id: 'reel-fm',
+    name: 'Reel FM',
+    blurb: 'Movie scores and chase themes from the Solmar backlot',
+    mood: 'day',
+    freq: '93.8',
+  },
 ];
+
+// Reel FM's programme: the backlot's own soundtrack — chase themes,
+// sunset scores and the stunt show's stingers, read out by the DJ
+// between the songs. The track list cycles in order, so the station
+// always knows what is playing.
+export const REEL_FM_TRACKS = [
+  'Reel FM — "Runway 27 (Main Theme)" — the strip, the jet, the jump.',
+  'Reel FM — "Sunset Over the Bay" — strings, a slow drive, the last light.',
+  'Reel FM — "The Stuntman\\u2019s Waltz" — three-four time, flat out, no brakes.',
+  'Reel FM — "Backlot Nights" — neon, rain on the set, a crane in the dark.',
+  'Reel FM — "The Last Race (Final Cut)" — drums, a boat, and a lighthouse.',
+  'Reel FM — "Mara\\u2019s Theme" — one guitar, one city, one debt to pay.',
+  'Reel FM — "The Film Job" — a heist in 4/4, the reels under your arm.',
+  'Reel FM — "Golden Hour Chase" — horns, a siren, and the sun in the mirror.',
+];
+let reelCursor = 0;
+export function reelFmTrack() {
+  const track = REEL_FM_TRACKS[reelCursor % REEL_FM_TRACKS.length];
+  reelCursor += 1;
+  return track;
+}
+
+// The Reel FM DJ: the backlot's voice, calling the stunt show between
+// the tracks — the ramp of the day, the best air, the next jump.
+export function reelFmDj(stuntState) {
+  if (!stuntState || stuntState.jumps === 0) return 'Reel FM — DJ Marlow: "The ramps are out, the cameras are rolling, and somebody out there has not jumped yet. You know who you are."';
+  return 'Reel FM — DJ Marlow: "Mara Voss, ' + stuntState.bestAir.toFixed(2) + ' seconds of air — the backlot is still talking about it. Who is going to beat that?"';
+}
 
 export function makeRadioState() {
   return {
@@ -137,6 +172,8 @@ export function radioJingle(state) {
     'casino-jazz': 'Casino Jazz — the piano never loses, even when you do.',
     'bay-blues': 'Bay Blues — slow water, slow songs, midnight at the marina.',
     'club-neon': 'Club Neon — house beats from your own club, Mara.',
+    'street-fm': 'Street FM — the walls are talking, and the paint is still wet.',
+    'reel-fm': 'Reel FM — the chase never ends, and neither does the music.',
   };
   return jingles[station.id] || station.name;
 }
@@ -155,7 +192,8 @@ export const RADIO_ADS = [
   'Harbour Bait & Tackle — the fish are biting, the patrol boats are not, and the bay is yours.',
   'Venn\u2019s Garage jobs board — deliveries, escorts, pickups. The pay scales, the clock does not wait.',
   'The Solmar showroom — six rare cars, one garage, and a gold Comet for the driver who finds them all.',
-  'The PD wanted board at Leo\\u2019s Garage — ten fugitives, cash on every head, and Vex works the same board. Press U at the garage.',
+  'The PD wanted board at Leo\\u2019s Garage — eleven fugitives, cash on every head, and Vex works the same board. Press U at the garage.',
+  'Reel FM — the film lot stunt show is on: eight ramps, one legend, and Mara Voss in the driver\\u2019s seat.',
   'Mama Sol runs the plaza — forty years, one bench, and a price on her head. The PD pays, the plaza watches.',
   'Mural Row — twelve walls, one gold can, and a Street Legend title for whoever finishes them all. Press I at a blank wall.',
 ];

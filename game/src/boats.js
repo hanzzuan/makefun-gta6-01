@@ -22,6 +22,9 @@ export const BOAT_KINDS = {
   // The smugglers' runner: the fastest hull on the bay, dark paint,
   // no running lights — it reads as a patrol boat until it is gone.
   smuggler: { topSpeed: 32, accel: 12, name: 'Smuggler Runner' },
+  // The film lot's ski boat: quick off the mark, built to tow a stunt
+  // skier across the bay while the cameras roll from the pier.
+  ski: { topSpeed: 24, accel: 13, name: 'Bay Ski Boat' },
 };
 
 const BOAT_NAMES = ['Wave Runner', 'Salt Spray', 'Night Tide', 'Golden Gull'];
@@ -76,6 +79,29 @@ export function makeBoatMesh(color, kind) {
     );
     mast.position.set(0, 4.2, 0.4);
     group.add(mast);
+  } else if (kind === 'ski') {
+    // The film lot's ski boat: a tow pylon amidships and a rope off
+    // the transom — built to drag a stunt skier across the bay while
+    // the cameras roll from the pier.
+    const pylon = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.09, 0.12, 2.2, 6),
+      new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.5, metalness: 0.6 }),
+    );
+    pylon.position.set(0, 2.3, -0.5);
+    group.add(pylon);
+    const rope = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 4.5, 4),
+      new THREE.MeshStandardMaterial({ color: 0xd8d0c0, roughness: 0.9 }),
+    );
+    rope.position.set(0, 1.6, -6.2);
+    rope.rotation.x = Math.PI / 2 - 0.35;
+    group.add(rope);
+    const handle = new THREE.Mesh(
+      new THREE.BoxGeometry(0.5, 0.08, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0xff7a1a, roughness: 0.6 }),
+    );
+    handle.position.set(0, 0.9, -8.2);
+    group.add(handle);
   } else {
     // The patrol boat: a cabin, a light bar, and a searchlight.
     const cabin = new THREE.Mesh(
@@ -129,7 +155,7 @@ export function makeBoat(scene, kind, x, z, heading) {
 
 // A moored boat near the pier or the marina: the ones Mara can steal.
 export function spawnBoat(scene, x, z, kind) {
-  const boat = makeBoat(scene, kind || pick(['speedboat', 'fishing', 'yacht', 'smuggler']), x, z, rand(0, Math.PI * 2));
+  const boat = makeBoat(scene, kind || pick(['speedboat', 'fishing', 'yacht', 'smuggler', 'ski']), x, z, rand(0, Math.PI * 2));
   boat.speed = 0;
   return boat;
 }

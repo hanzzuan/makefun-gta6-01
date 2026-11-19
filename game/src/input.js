@@ -21,13 +21,14 @@ const state = {
 // consumes each one exactly once, so a single tap never double-fires.
 // C opens Club Neon at the club door, T opens the taxi rank anywhere,
 // G/J/K/L open the garage, the jobs board, the showroom and the
-// packages list at the garage, and O hides the HUD for a photo.
+// packages list at the garage, Y opens the stunt board there, and O
+// hides the HUD for a photo.
 // I sprays a wall when Mara stands by one, or opens the street-art
 // gallery at the garage.
 const EDGE_KEYS = new Set([
   'KeyE', 'KeyF', 'KeyP', 'KeyM', 'Digit1', 'Digit2', 'Enter', 'Space',
   'KeyR', 'KeyH', 'KeyG', 'KeyN', 'KeyB', 'KeyV', 'KeyX', 'KeyC', 'KeyT',
-  'KeyJ', 'KeyK', 'KeyL', 'KeyO', 'KeyU', 'KeyI',
+  'KeyJ', 'KeyK', 'KeyL', 'KeyO', 'KeyU', 'KeyI', 'KeyY',
 ]);
 
 function noteInteract() {

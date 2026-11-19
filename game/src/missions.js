@@ -1,6 +1,6 @@
 // missions.js — the story of Solmar and its jobs.
 // Mara Voss came home to save her brother's garage from Dario Venn, the
-// fixer who owns half the marina. Forty missions, then free roam with
+// fixer who owns half the marina. Forty-four missions, then free roam with
 // taxi fares, car theft, boats and rival chases to keep earning. Every
 // mission is a small state machine: stages with a target point, a
 // radius, and a line of story text. The last three jobs take Mara east
@@ -11,7 +11,10 @@
 // The epilogue takes her back to the water: a signal from the
 // lighthouse, and one last run through every street she owns. And
 // after dark, the story runs four more jobs — the quiet harbor, the
-// neon nights, the long road home, and Solmar after dark itself.
+// neon nights, the long road home, and Solmar after dark itself. And
+// the final cut runs four more still: the film job, the stunt double,
+// the last race, and the true final sunset — forty-four jobs, and the
+// legend is written in the last four.
 
 import { PLACES } from './city.js';
 import { dist2D } from './util.js';
@@ -19,14 +22,14 @@ import { boatAtBuoy } from './boats.js';
 
 export const STORY_INTRO =
   'Mara Voss is back in Solmar. Her brother Leo\u2019s garage owes Dario Venn ' +
-  '$50,000, and Venn collects on Friday. Forty jobs stand between Mara and ' +
+  '$50,000, and Venn collects on Friday. Forty-four jobs stand between Mara and ' +
   'a clean slate — if the Solmar PD doesn\u2019t catch her first.';
 
 export function makeMissionState() {
   return {
-    index: 0, // which mission is active (0..39), 40 = story done
+    index: 0, // which mission is active (0..43), 44 = story done
     stage: 0,
-    done: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+    done: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
     fare: null, // active taxi fare, if any
     fareCooldown: 8,
     message: '',
@@ -42,7 +45,7 @@ function stage(kind, place, text, radius, extra) {
   return { kind, place, text, radius: radius || 10, ...(extra || {}) };
 }
 
-// The story arcs: forty missions in nine arcs, from the garage debt to
+// The story arcs: forty-four missions in ten arcs, from the garage debt to
 // the last sunset. The mission-complete toast names the arc, so the
 // player always knows which chapter just closed.
 export const STORY_ARCS = [
@@ -55,6 +58,7 @@ export const STORY_ARCS = [
   { from: 18, to: 31, name: 'Sunset Streets', blurb: 'The lighthouse, the showroom, the jobs board — Solmar, forever.' },
   { from: 32, to: 35, name: 'After Dark', blurb: 'The quiet harbor, the neon nights, the long road home.' },
   { from: 36, to: 39, name: 'The Last Sunset', blurb: 'The last ledger, the night boat, the showroom job — and the true final mission.' },
+  { from: 40, to: 43, name: 'The Final Cut', blurb: 'The film job, the stunt double, the last race — and the true final sunset.' },
 ];
 
 export function missionArc(index) {
@@ -708,6 +712,79 @@ export const MISSIONS = [
       stage('clear', PLACES.tower, 'Clear the tower — five guards, and the skyline belongs to you.', 22, { enemies: 5, variant: 'guard' }),
       stage('timed', PLACES.safehouse, 'Home to the safehouse in 120 seconds — the story ends at your own door.', 12, { timeLimit: 120 }),
       stage('done', null, 'Forty jobs. One city. One legend. Mara Voss — Sunset Streets, forever.', 0),
+    ],
+  },
+  {
+    id: 'the-film-job',
+    title: 'MISSION 41 — THE FILM JOB',
+    reward: 260000,
+    briefing: 'The Solmar backlot is shooting a chase film, and the ' +
+      'director wants Mara for the real thing: their stunt driver ' +
+      'walked out, the crew is union and the cameras are rolling. ' +
+      'Drive the film lot, clear the set of the stuntmen who took ' +
+      'the director hostage over pay, and bring the reels home. ' +
+      'Hollywood pays better than Venn ever did.',
+    flavor: 'The director is already talking sequel — and the stunt crew is talking about Mara.',
+    stages: [
+      stage('goto', PLACES['film-lot'], 'The film lot is on the beach, west of the boardwalk — the backlot, the ramps, and the cameras.', 16),
+      stage('clear', PLACES['film-lot'], 'Clear the set — five stuntmen holding the director over pay, and the cameras are still rolling.', 22, { enemies: 5, variant: 'stuntman' }),
+      stage('timed', PLACES.garage, 'Bring the reels to Leo at the garage in 120 seconds — the film is worth more than the set.', 12, { timeLimit: 120 }),
+      stage('done', null, 'The director has his film, the stuntmen have their pay, and Mara has the biggest cheque of the story so far.', 0),
+    ],
+  },
+  {
+    id: 'stunt-double',
+    title: 'MISSION 42 — STUNT DOUBLE',
+    reward: 270000,
+    briefing: 'The director wants one more shot: Mara doubling ' +
+      'herself, flat out down Runway 27, off the ramp, over the ' +
+      'terminal — while Rocco\u2019s stuntmen try to run her off the ' +
+      'strip. Clear the runway crew, then make the stadium in ' +
+      'a hundred seconds, because the second unit is already rolling.',
+    flavor: 'The jump is in the can — one take, no rehearsal, and the whole backlot saw it.',
+    stages: [
+      stage('goto', PLACES.runway, 'Runway 27, flat out — the film crew is waiting at the end of the strip with the cameras.', 16),
+      stage('clear', PLACES.runway, 'Clear the runway — four of Rocco\u2019s stuntmen, and the jump is worthless if they are still on it.', 22, { enemies: 4, variant: 'stuntman' }),
+      stage('timed', PLACES.stadium, 'To the stadium in 100 seconds — the second unit is rolling, and the jump only counts once.', 12, { timeLimit: 100 }),
+      stage('done', null, 'The jump is in the can, the runway is clear, and the stunt crew is already calling Mara the best double in Solmar.', 0),
+    ],
+  },
+  {
+    id: 'the-last-race',
+    title: 'MISSION 43 — THE LAST RACE',
+    reward: 280000,
+    briefing: 'One last race, and this one is for the whole city: ' +
+      'the smugglers are running a boat across the bay at dawn, ' +
+      'and the only way to stop them is to take the pier, take the ' +
+      'buoy, and bring the drop home before the sun is up. The ' +
+      'last race is not on the road — it is on the water.',
+    flavor: 'The pier is quiet, the skiff is gone, and the dawn belongs to Solmar.',
+    stages: [
+      stage('goto', PLACES.marina, 'The smugglers are loading at the marina pier — get there before the boat leaves.', 14),
+      stage('boat', PLACES.buoy, 'Run the lighthouse buoy — the smuggler skiff is fast, and the bay is the only road.', 16),
+      stage('clear', PLACES.marina, 'Clear the pier — four smugglers between Mara and the drop, and the dawn is coming.', 22, { enemies: 4, variant: 'smuggler' }),
+      stage('timed', PLACES.safehouse, 'Bring the drop home to the safehouse in 120 seconds — the last race ends at your own door.', 12, { timeLimit: 120 }),
+      stage('done', null, 'The skiff is gone, the pier is quiet, and the last race is Mara\u2019s — the city is hers to keep.', 0),
+    ],
+  },
+  {
+    id: 'sunset-forever-final',
+    title: 'MISSION 44 — SUNSET FOREVER',
+    reward: 300000,
+    briefing: 'The true final sunset: the lighthouse, the plaza, ' +
+      'the tower and home, in one run, at golden hour. Forty-four ' +
+      'jobs, and this one pays for all of them — because it is the ' +
+      'one that ends the story for good, and starts the legend for ' +
+      'real. Every street, every crew, every jump — one last time.',
+    flavor: 'Forty-four jobs. One city. One legend. The sun sets on Solmar, and Mara Voss owns the light.',
+    stages: [
+      stage('boat', PLACES.buoy, 'Take a boat out to the lighthouse buoy one last time — light the signal for the whole city.', 16),
+      stage('goto', PLACES.plaza, 'To the plaza — the whole city is out, and the sun is setting on Solmar for the last time.', 18),
+      stage('clear', PLACES.plaza, 'Clear the plaza one last time — six loyalists, and the legend is written tonight.', 24, { enemies: 6, variant: 'rival' }),
+      stage('goto', PLACES.tower, 'To Solmar Tower — the last rooftop, the last crew, the last light in the city.', 14),
+      stage('clear', PLACES.tower, 'Clear the tower — five guards, and the skyline belongs to you.', 22, { enemies: 5, variant: 'guard' }),
+      stage('timed', PLACES.safehouse, 'Home to the safehouse in 120 seconds — the story ends at your own door.', 12, { timeLimit: 120 }),
+      stage('done', null, 'Forty-four jobs. One city. One legend. Mara Voss — Sunset Streets, forever.', 0),
     ],
   },
 ];

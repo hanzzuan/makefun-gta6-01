@@ -7,29 +7,29 @@ import * as THREE from 'three';
 import { buildCity, PLACES, hitsBuilding, nearestPlace } from './city.js';
 import { makeCar, spawnTrafficCar, updateTrafficCar, updatePlayerCar, updateCarLights } from './cars.js';
 import { CAMPUS_STUDENTS, buildEastBountyBoard, buildEastMural, buildStadiumMural, buildMallMural } from './east.js';
-import { buildCasinoSign, buildBountyBillboard, buildResortMural, buildAirportMural, buildBeachMural } from './south.js';
+import { buildCasinoSign, buildBountyBillboard, buildResortMural, buildAirportMural, buildBeachMural, buildFilmLot } from './south.js';
 import { makePlayer, updatePlayerOnFoot, updateCamera, nearestCar as nearestCarToPlayer, randomSpawn, damageThroughArmour, clampPlayerToCity, setSpraying } from './player.js';
-import { spawnPedestrian, spawnPedestrianPair, spawnPedestrianAt, spawnVendor, spawnJobClients, spawnRareSpotters, spawnDog, updatePedestrian } from './pedestrians.js';
-import { makeWanted, addHeat, updateWanted, wantedForLevel, spawnPoliceCar, updatePoliceCar, nearestPoliceDistance, spawnRoadblock, despawnRoadblock, roadblockSpot, pdDispatchText, RARE_CAR_HEAT, GRAFFITI_HEAT } from './police.js';
+import { spawnPedestrian, spawnPedestrianPair, spawnPedestrianAt, spawnVendor, spawnJobClients, spawnRareSpotters, spawnDog, updatePedestrian, filmCrewLine } from './pedestrians.js';
+import { makeWanted, addHeat, updateWanted, wantedForLevel, spawnPoliceCar, updatePoliceCar, nearestPoliceDistance, spawnRoadblock, despawnRoadblock, roadblockSpot, pdDispatchText, RARE_CAR_HEAT, GRAFFITI_HEAT, STUNT_HEAT } from './police.js';
 import { makeMissionState, currentMission, currentStage, updateMissions, missionObjectiveText, startFare, fareObjectiveText, farePayForDestination, STORY_INTRO, missionArc, arcPayout } from './missions.js';
-import { makeEnemy, updateEnemy, shootFromCamera, punch, makeTracer, updateTracer, makeBarrel, detonateBarrel, makeHealthPack, isBoss, cashDropFor } from './combat.js';
-import { initHud, setStars, setCash, setHealth, setStamina, setClock, setTimer, setObjective, setSpeed, setHint, setCrosshair, setRaceLine, showGarage, showProperty, showCrew, showCasino, showNightclub, showFastTravel, showJobs, showBounty, showCollectors, showGraffiti, setRadio, setCrewLine, toast, announce, showStart, showPause, showBusted, showWasted, showStoryComplete, hideOverlay, drawMinimap } from './hud.js';
+import { makeEnemy, updateEnemy, shootFromCamera, punch, makeTracer, updateTracer, makeBarrel, detonateBarrel, makeHealthPack, isBoss, cashDropFor, enemyTaunt } from './combat.js';
+import { initHud, setStars, setCash, setHealth, setStamina, setClock, setTimer, setObjective, setSpeed, setHint, setCrosshair, setRaceLine, showGarage, showProperty, showCrew, showCasino, showNightclub, showFastTravel, showJobs, showBounty, showCollectors, showGraffiti, showStunts, showTitleCard, setLetterbox, setRadio, setCrewLine, toast, announce, showStart, showPause, showBusted, showWasted, showStoryComplete, hideOverlay, drawMinimap } from './hud.js';
 import { initAudio, resumeAudio, toggleMute, isMuted, sfx, startEngine, setEngine, stopEngine, startSiren, setSiren, startRotor, setRotor, startMusic, setMusicMood, setRadioStation, startRain, setRainLevel, startBoat, setBoat, stopBoat } from './audio.js';
 import { loadSave, writeSave, clearSave } from './save.js';
 import { initInput, moveAxes, consumePressed, anyPressed, consumeWheel, mouseIsDown, isDown } from './input.js';
 import { shotFromUrl, applyShot, markShotReady } from './shots.js';
-import { clamp, dist2D, formatClock, formatRaceTime, formatCountdown } from './util.js';
+import { clamp, dist2D, formatClock, formatRaceTime, formatCountdown, formatAirtime, nightFactor } from './util.js';
 import { makeHeli, updateHeli, heliOnStation, heliCallCountdown, HELI_CALL_WARNING } from './heli.js';
 import { garageFromSave, garageNear, garageMenuItems, garageSummary, buyUpgrade, buyPaint, applyGarageUpgrades, buildBountyBoard, updateBountyBoard } from './garage.js';
-import { raceFromSave, raceNearStart, buildRaceGates, buildRaceStartMarkers, clearRaceGates, startRace, cancelRace, updateRace, raceObjective, raceStatusLine } from './races.js';
+import { raceFromSave, raceNearStart, buildRaceGates, buildRaceStartMarkers, clearRaceGates, startRace, cancelRace, updateRace, raceObjective, raceStatusLine, raceRampLine } from './races.js';
 import { taxiFromSave, taxiFarePay, onTaxiFareDone, breakTaxiChain, rollVipFare, companyFareDestination, taxiStatusLine, taxiJobBonusPay } from './taxi.js';
 import { makeBoat, spawnBoat, spawnPatrolBoat, updatePlayerBoat, updateBoatVisual, boatNear, makeBuoy, updateBuoy, updateRivalBoat } from './boats.js';
-import { makePropertyState, propertyFromSave, propertyNear, buyProperty, propertyMenuItems, propertySummary, collectRent, buildPropertySigns, updatePropertySigns, propertyStatusLine } from './property.js';
-import { makeRivalState, rivalFromSave, spawnRivalChase, updateRival, updateRivalChase, despawnRivals, rivalTaunt, rivalStatusLine, damageRival, RIVAL_CHASE_REWARD, rivalWreckBonus, rivalTagWar } from './rivals.js';
-import { makeRadioState, radioFromSave, nextStation, currentStation, radioStatusLine, radioJingle, radioAd } from './radio.js';
+import { makePropertyState, propertyFromSave, propertyNear, buyProperty, propertyMenuItems, propertySummary, collectRent, buildPropertySigns, updatePropertySigns, propertyStatusLine, propertyStuntMult } from './property.js';
+import { makeRivalState, rivalFromSave, spawnRivalChase, updateRival, updateRivalChase, despawnRivals, rivalTaunt, rivalStatusLine, damageRival, RIVAL_CHASE_REWARD, rivalWreckBonus, rivalTagWar, rivalStuntDuel } from './rivals.js';
+import { makeRadioState, radioFromSave, nextStation, currentStation, radioStatusLine, radioJingle, radioAd, reelFmTrack, reelFmDj } from './radio.js';
 import { makeEventState, eventFromSave, updateEvents, eventStatusLine } from './events.js';
-import { spawnBus, updateBus, spawnCoupe, spawnPickup, spawnSprayVan, spawnTaxi, busStatusLine } from './vehicles.js';
-import { makeCrewState, crewFromSave, crewNear, hireCrew, trainCrew, hasCrew, crewMenuItems, crewSummary, crewSpeedMult, crewDecayMult, crewLookout, crewStatusLine, crewHiredLine, onMissionWithCrew, crewJobBonus, crewBountyBonus, crewGraffitiBonus } from './crew.js';
+import { spawnBus, updateBus, spawnCoupe, spawnPickup, spawnSprayVan, spawnFilmVan, spawnCameraCar, spawnTaxi, busStatusLine } from './vehicles.js';
+import { makeCrewState, crewFromSave, crewNear, hireCrew, trainCrew, hasCrew, crewMenuItems, crewSummary, crewSpeedMult, crewDecayMult, crewLookout, crewStatusLine, crewHiredLine, onMissionWithCrew, crewJobBonus, crewBountyBonus, crewGraffitiBonus, crewStuntBonus } from './crew.js';
 import { makeCasinoState, casinoFromSave, casinoNear, playSlots, playBlackjack, playRoulette, casinoMenuItems, casinoSummary, casinoStatusLine, casinoBetFor } from './casino.js';
 import { makeNightclubState, nightclubFromSave, nightclubNear, buyClub, hireBouncer, buyClubUpgrade, clubDailyTake, collectClubIncome, djStartSet, djUpdate, djHit, djSetLine, nightclubMenuItems, nightclubSummary, nightclubStatusLine, clubDoorLine, clubCrowdLine, buildClubSign, updateClubSign } from './nightclub.js';
 import { makeFastTravelState, fastTravelFromSave, fastTravelMenuItems, fastTravelSummary, fastTravelStatusLine, fastTravelArrivedLine, takeFastTravel, fastTravelBlockReason } from './fasttravel.js';
@@ -37,10 +37,11 @@ import { makeCollectorsState, collectorsFromSave, spawnRareCars, updateCollector
 import { makePackagesState, packagesFromSave, spawnPackages, updatePackages, packagesMenuItems, packagesSummary, packagesStatusLine, packagesComplete, packagesJobBonus, packagesBountyBonus, nearestPackage, pulsePackageMeshes } from './packages.js';
 import { makeJobsState, jobsFromSave, jobsNear, refreshJobsBoard, acceptJob, updateJobs, jobsMenuItems, jobsSummary, jobsStatusLine, jobsBoardLine, jobsTimerLine } from './jobs.js';
 import { makeBountyState, bountyFromSave, bountyNear, refreshBountyBoard, acceptBounty, updateBounty, bountyMenuItems, bountySummary, bountyStatusLine, bountyBoardLine, fugitiveSpawnPoint, fugitiveTaunt, BOUNTY_RIVAL_NAME } from './bounty.js';
-import { makeGraffitiState, graffitiFromSave, buildGraffitiWalls, updateGraffitiWalls, graffitiNear, startSpray, sprayCoat, cancelSpray, updateGraffiti, graffitiMenuItems, graffitiSummary, graffitiStatusLine, graffitiRumor, sprayMeter, nearestSpraySpot, graffitiTitle, graffitiWallsLeft } from './graffiti.js';
+import { makeGraffitiState, graffitiFromSave, buildGraffitiWalls, updateGraffitiWalls, graffitiNear, startSpray, sprayCoat, cancelSpray, updateGraffiti, graffitiMenuItems, graffitiSummary, graffitiStatusLine, graffitiRumor, sprayMeter, nearestSpraySpot, graffitiTitle, graffitiWallsLeft, buildFilmWall } from './graffiti.js';
+import { makeStuntState, stuntsFromSave, buildStuntRamps, updateStunts, stuntTimeScaleWithCrew, stuntTitle, stuntSetDone, STUNT_SET_BONUS, STUNT_DUEL_REWARD, nearestUnjumpedRamp, stuntMenuItems, stuntSummary, stuntStatusLine, stuntRumor, stuntComboLine, STUNT_RAMPS } from './stunts.js';
 
-// The story is forty jobs long; the taxi company opens once it is done.
-const STORY_LEN = 40;
+// The story is forty-four jobs long; the taxi company opens once it is done.
+const STORY_LEN = 44;
 
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -99,7 +100,7 @@ const packagesState = packagesFromSave(save && save.packages);
 refreshJobsBoard(jobsState);
 
 // The v5d system: the PD's wanted board, run out of Leo's garage —
-// ten fugitives, a rival hunter on the same board, and a clock.
+// eleven fugitives, a rival hunter on the same board, and a clock.
 const bountyState = bountyFromSave(save && save.bounty);
 refreshBountyBoard(bountyState);
 
@@ -107,6 +108,10 @@ refreshBountyBoard(bountyState);
 // the city, a three-coat mini-game at each one, and a rep that ends
 // in a gold spray-can paint for the Comet GT.
 const graffitiState = graffitiFromSave(save && save.graffiti);
+
+// The v5f system: the stunt jumps — eight ramps around the city, a
+// slow-mo on big air, and a title ladder that ends in Stunt Legend.
+const stuntState = stuntsFromSave(save && save.stunts);
 
 const wanted = makeWanted();
 const missions = makeMissionState();
@@ -163,6 +168,25 @@ buildBeachMural(scene);
 // with Mara's work as the pieces dry.
 const graffitiWalls = buildGraffitiWalls(scene, graffitiState);
 
+// The film lot: the backlot set on the beach — facade, camera crane,
+// floodlights — and the eight stunt ramps, orange wedges with flags,
+// plus the film van and a decorative wall for the cameras.
+buildFilmLot(scene);
+buildStuntRamps(scene);
+spawnFilmVan(scene, -278, 100);
+// A second film van at the marina pier: the crew shoots the boat
+// chase there, and the van carries the cameras for the water unit.
+spawnFilmVan(scene, -230, 170);
+buildFilmWall(scene, -292, 82);
+
+// The headlight: one real spotlight for Mara's car, lit after dark —
+// the beam pools on the road ahead and swings with the wheel.
+const headlight = new THREE.SpotLight(0xfff2c8, 0, 60, 0.55, 0.5, 1.0);
+const headlightTarget = new THREE.Object3D();
+scene.add(headlight);
+scene.add(headlightTarget);
+headlight.target = headlightTarget;
+
 const traffic = [];
 const police = [];
 const peds = [];
@@ -197,7 +221,7 @@ const game = {
   city, colliders, roadblocks, barrels, heli, garage, raceState, taxiCompany,
   boats, rivalBoats, propertyState, radioState, rivalState, eventState,
   crewState, casinoState, nightclubState, fastTravelState,
-  collectorsState, jobsState, graffitiState,
+  collectorsState, jobsState, graffitiState, stuntState,
   state: 'menu',
   shotMode: false,
   cameraMode: 'follow',
@@ -293,6 +317,11 @@ for (const [px, pz] of [[312, 128], [328, 132], [306, 148], [334, 152], [320, 12
 for (const [px, pz] of [[312, 48], [328, 48], [308, 56], [332, 56]]) {
   peds.push(spawnPedestrianAt(scene, px, pz, 'shopper'));
 }
+// The film crew: a director and two gaffers walking the backlot set,
+// clapperboards out, calling the shots while the stuntmen rehearse.
+for (const [px, pz] of [[-280, 86], [-272, 98], [-290, 96], [-276, 108]]) {
+  peds.push(spawnPedestrianAt(scene, px, pz, 'film-crew'));
+}
 // Boats on the bay: two moored at the dockside pier, one by the marina,
 // and the Solmar Yacht moored off the resort — the fastest hull in the
 // bay. Mara boards one with E, the same way she steals a car.
@@ -311,6 +340,9 @@ traffic.push(spawnPickup(scene, 210, -140, Math.PI / 2));
 // The Mural Row supply van: gold, full of paint and ladders, parked
 // by the mural row so the taggers never run dry.
 traffic.push(spawnSprayVan(scene, -100, -60));
+// The film lot's camera car: a black coupe with a rig on the roof,
+// parked at the backlot gate — stealable, and the film crew will miss it.
+traffic.push(spawnCameraCar(scene, -270, 108));
 // A yellow cab at the plaza kerb, waiting to be stolen.
 traffic.push(spawnTaxi(scene, 20, 20));
 // Property signs: gold panels at the three buyable doors.
@@ -379,7 +411,7 @@ function startGame() {
   document.body.classList.add('playing');
   game.state = 'playing';
   const m = currentMission(missions);
-  if (m) toast(m.title, m.briefing);
+  if (m) { showTitleCard(m.title, m.briefing, m.reward); sfx.sting(); }
   else toast('FREE ROAM', 'Solmar is yours. Take fares, steal cars, dodge the PD.');
   announce(STORY_INTRO);
 }
@@ -411,6 +443,7 @@ function persist() {
     packages: packagesState,
     bounty: bountyState,
     graffiti: graffitiState,
+    stunts: stuntState,
     tokensTaken: tokens.map((t, i) => (t.taken ? i : -1)).filter((i) => i >= 0),
     muted: isMuted(),
   });
@@ -422,7 +455,7 @@ function pauseGame() {
   showPause(
     () => { hideOverlay(); game.state = 'playing'; },
     () => { clearSave(); window.location.reload(); },
-    { ...stats, crewHired: crewState.hired.length, casinoGames: casinoState.hands + casinoState.spins, jobsDone: jobsState.done, rareCars: collectorsState.collected.length, packagesFound: packagesState.found.length, bountyCaught: bountyState.caught, bountyRank: bountyBoardLine(bountyState), graffitiPieces: graffitiState.done.length, graffitiTitle: graffitiTitle(graffitiState), arcName: missionArc(missions.index).name, arcPayout: arcPayout(missions.index), streak: graffitiState.perfectStreak },
+    { ...stats, crewHired: crewState.hired.length, casinoGames: casinoState.hands + casinoState.spins, jobsDone: jobsState.done, rareCars: collectorsState.collected.length, packagesFound: packagesState.found.length, bountyCaught: bountyState.caught, bountyRank: bountyBoardLine(bountyState), graffitiPieces: graffitiState.done.length, graffitiTitle: graffitiTitle(graffitiState), stuntJumps: stuntState.jumps.length, stuntBestAir: stuntState.bestAir, stuntBestCombo: stuntState.bestCombo, stuntTitle: stuntTitle(stuntState), arcName: missionArc(missions.index).name, arcPayout: arcPayout(missions.index), streak: graffitiState.perfectStreak },
   );
 }
 
@@ -644,6 +677,8 @@ function spawnGenericCrew(place, count, variant) {
     const r = 8 + (i % 2) * 4;
     enemies.push(makeEnemy(scene, place.x + Math.cos(a) * r, place.z + Math.sin(a) * r, variant || 'crew'));
   }
+  // The crew talks before it shoots — the stuntmen most of all.
+  if (variant === 'stuntman') toast('THE STUNTMEN', enemyTaunt({ variant: 'stuntman' }));
 }
 
 // Mission 4: Venn's enforcers shaking down the dockworkers by the
@@ -922,6 +957,9 @@ function openGarage() {
       player.money,
       garageSummary(garage),
       (id) => {
+        // The stunt board lives in the garage too: one tap from the
+        // tuning bench opens the ramps, the best air and the ladder.
+        if (id === 'stunts') { openStunts(); return; }
         if (id === 'engine' || id === 'armour' || id === 'nitro') {
           const res = buyUpgrade(garage, id, player.money);
           if (!res.ok) { sfx.denied(); return; }
@@ -1204,7 +1242,7 @@ function openFastTravel() {
 }
 
 // --- the wanted board ---------------------------------------------------------------
-// Open the bounty board at the garage: the ten fugitives, their price
+// Open the bounty board at the garage: the eleven fugitives, their price
 // and hideout, and the hunt already running. Taking a name spawns the
 // fugitive at their hideout and starts Vex's clock.
 function openBounty() {
@@ -1326,6 +1364,22 @@ function openGraffiti() {
   );
 }
 
+// The stunt board: eight ramps, the best air on each, and the title
+// ladder — the garage wall where Mara's jump record lives.
+function openStunts() {
+  game.state = 'paused';
+  showStunts(
+    stuntMenuItems(stuntState),
+    player.money,
+    stuntSummary(stuntState),
+    () => {
+      hideOverlay();
+      game.state = 'playing';
+      persist();
+    },
+  );
+}
+
 // --- taxi fares (free roam) ----------------------------------------------------------
 
 function maybeOfferFare(dt) {
@@ -1391,6 +1445,10 @@ function animate() {
 }
 
 function stepGame(dt) {
+  // Slow motion: a big jump dips the whole world to a third of its
+  // speed for a breath, so the air hangs — the dip is measured in real
+  // time, so it never outstays its welcome.
+  dt = dt * stuntTimeScaleWithCrew(stuntState, hasCrew(crewState, 'jax'));
   // Screenshot presets drive themselves so the staged moment stays alive.
   const axes = game.autoDrive ? { x: 0, y: 1 } : moveAxes();
   const running = isDown('ShiftLeft') || isDown('ShiftRight');
@@ -1411,13 +1469,14 @@ function stepGame(dt) {
   // The garage: on foot near Venn's Garage, press G to open Leo's panel.
   // One tap, one panel: the garage trio shares a single key check, and
   // each key keeps its own spot — J needs the board, G and K the garage.
-  const garageKey = anyPressed(['KeyG', 'KeyJ', 'KeyK', 'KeyL', 'KeyU']);
+  const garageKey = anyPressed(['KeyG', 'KeyJ', 'KeyK', 'KeyL', 'KeyU', 'KeyY']);
   if (garageKey && !playerCar) {
     if (garageKey === 'KeyG' && garageNear(player.x, player.z)) { openGarage(); return; }
     if (garageKey === 'KeyJ' && jobsNear(player.x, player.z)) { openJobs(); return; }
     if (garageKey === 'KeyK' && garageNear(player.x, player.z)) { openCollectors(); return; }
     if (garageKey === 'KeyL' && garageNear(player.x, player.z)) { openPackages(); return; }
     if (garageKey === 'KeyU' && bountyNear(player.x, player.z)) { openBounty(); return; }
+    if (garageKey === 'KeyY' && garageNear(player.x, player.z)) { openStunts(); return; }
   }
   // Street art: on foot near a blank wall, press I to spray — the
   // needle sweeps and E lays each coat, three coats finish the wall.
@@ -1490,7 +1549,7 @@ function stepGame(dt) {
       raceState.gates = buildRaceGates(scene, route);
       startRace(raceState, route);
       lastRaceCount = 4;
-      toast('RACE — ' + route.name, route.blurb + ' Beat par ' + formatRaceTime(route.par) + ' for $' + route.payout + '.');
+      toast('RACE — ' + route.name, route.blurb + raceRampLine(route) + ' Beat par ' + formatRaceTime(route.par) + ' for $' + route.payout + '.');
       sfx.raceBeep();
     }
   }
@@ -1501,12 +1560,22 @@ function stepGame(dt) {
     setRadioStation(radioState.station);
     setRadio(radioStatusLine(radioState));
     toast('\u266A ' + station.name, radioJingle(radioState));
+    // Reel FM names its track: the backlot's soundtrack, read out by
+    // DJ Marlow with the stunt show's latest news.
+    if (station.id === 'reel-fm') {
+      toast('\u266A REEL FM', reelFmTrack());
+      announce(reelFmDj(stuntState));
+      sfx.sting();
+    }
     // Every third switch, the dial carries an ad — Solmar's shops
     // pay for the airtime, and the ads are half the city's gossip.
     if (radioState.switches % 3 === 0) toast('\u266A SOLMAR RADIO', radioAd());
     // Every fifth switch, the dial carries a rumour from the walls —
     // the city always knows where the next blank wall is.
     if (radioState.switches % 5 === 0) toast('\u266A STREET FM', graffitiRumor(graffitiState));
+    // Every seventh switch, Reel FM carries a rumour from the ramps —
+    // the backlot always knows where the next jump is.
+    if (radioState.switches % 7 === 0) toast('\u266A REEL FM', stuntRumor(stuntState));
     sfx.click();
   }
   // Property: B near a sign buys a place or visits one Mara owns.
@@ -1582,7 +1651,7 @@ function stepGame(dt) {
   // count and variant — so a new mission never needs a hardcoded
   // spawn function. Two missions clear twice (the comet's shadow and
   // every street), so their entries are lists, not single stages.
-  const clearStage = { 'southern-comfort': 1, 'the-last-flight': 1, 'campus-heist': 1, 'stadium-finale': 1, 'venns-ledger': 2, 'the-long-con': 1, 'the-last-sunset': 1, 'night-shift': 1, 'harbor-job': 1, 'safehouse-siege': 1, 'sunset-streets': 2, 'the-lighthouse': 2, 'sunset-streets-2': 1, 'the-long-sunset': 1, 'solmar-forever': 1, 'the-bay-run': 1, 'epilogue-comet-gt': 1, 'the-gold-standard': 1, 'sunset-forever': 1, 'the-last-crew': 1, 'king-of-solmar': 1, 'the-long-way-home': 1, 'the-comets-shadow': [1, 3], 'every-street': [1, 3], 'solmar-forever-2': 2, 'quiet-harbor': [1, 3], 'neon-nights': [1, 3], 'long-road-home': [1, 4], 'solmar-after-dark': [2, 4], 'the-last-ledger': 2, 'harbor-lights-2': 2, 'the-showroom-job': 1, 'solmar-forever-2b': [2, 4] };
+  const clearStage = { 'southern-comfort': 1, 'the-last-flight': 1, 'campus-heist': 1, 'stadium-finale': 1, 'venns-ledger': 2, 'the-long-con': 1, 'the-last-sunset': 1, 'night-shift': 1, 'harbor-job': 1, 'safehouse-siege': 1, 'sunset-streets': 2, 'the-lighthouse': 2, 'sunset-streets-2': 1, 'the-long-sunset': 1, 'solmar-forever': 1, 'the-bay-run': 1, 'epilogue-comet-gt': 1, 'the-gold-standard': 1, 'sunset-forever': 1, 'the-last-crew': 1, 'king-of-solmar': 1, 'the-long-way-home': 1, 'the-comets-shadow': [1, 3], 'every-street': [1, 3], 'solmar-forever-2': 2, 'quiet-harbor': [1, 3], 'neon-nights': [1, 3], 'long-road-home': [1, 4], 'solmar-after-dark': [2, 4], 'the-last-ledger': 2, 'harbor-lights-2': 2, 'the-showroom-job': 1, 'solmar-forever-2b': [2, 4], 'the-film-job': 1, 'stunt-double': 1, 'the-last-race': 2, 'sunset-forever-final': [2, 4] };
   let crewDown = false;
   const clearStages = clearStage[mission.id];
   const isClearStage = Array.isArray(clearStages) ? clearStages.includes(missions.stage) : missions.stage === clearStages;
@@ -1600,7 +1669,7 @@ function stepGame(dt) {
       else if (mission.id === 'harbor-job') spawnHarborJobCrew();
       else if (mission.id === 'safehouse-siege') spawnSafehouseCrew();
       else if (mission.id === 'sunset-streets') spawnFinalCrew();
-      else if (mission.id === 'the-lighthouse' || mission.id === 'sunset-streets-2' || mission.id === 'the-long-sunset' || mission.id === 'solmar-forever' || mission.id === 'the-bay-run' || mission.id === 'epilogue-comet-gt' || mission.id === 'the-gold-standard' || mission.id === 'sunset-forever' || mission.id === 'the-last-crew' || mission.id === 'king-of-solmar' || mission.id === 'the-long-way-home' || mission.id === 'the-comets-shadow' || mission.id === 'every-street' || mission.id === 'solmar-forever-2' || mission.id === 'quiet-harbor' || mission.id === 'neon-nights' || mission.id === 'long-road-home' || mission.id === 'solmar-after-dark' || mission.id === 'the-last-ledger' || mission.id === 'harbor-lights-2' || mission.id === 'the-showroom-job' || mission.id === 'solmar-forever-2b') {
+      else if (mission.id === 'the-lighthouse' || mission.id === 'sunset-streets-2' || mission.id === 'the-long-sunset' || mission.id === 'solmar-forever' || mission.id === 'the-bay-run' || mission.id === 'epilogue-comet-gt' || mission.id === 'the-gold-standard' || mission.id === 'sunset-forever' || mission.id === 'the-last-crew' || mission.id === 'king-of-solmar' || mission.id === 'the-long-way-home' || mission.id === 'the-comets-shadow' || mission.id === 'every-street' || mission.id === 'solmar-forever-2' || mission.id === 'quiet-harbor' || mission.id === 'neon-nights' || mission.id === 'long-road-home' || mission.id === 'solmar-after-dark' || mission.id === 'the-last-ledger' || mission.id === 'harbor-lights-2' || mission.id === 'the-showroom-job' || mission.id === 'solmar-forever-2b' || mission.id === 'the-film-job' || mission.id === 'stunt-double' || mission.id === 'the-last-race' || mission.id === 'sunset-forever-final') {
         const st = mission.stages[missions.stage];
         spawnGenericCrew(st.place, st.enemies, st.variant);
       }
@@ -1636,11 +1705,80 @@ function stepGame(dt) {
     if (consumePressed('KeyE')) exitBoat();
     if (!game.shotMode) game.cameraMode = 'chase';
   } else if (playerCar) {
+    // Drift: the tyre scrub starts the moment the tail steps out, so
+    // the drift state is read before the physics move the car.
+    const wasDrifting = playerCar.drifting;
     updatePlayerCar(playerCar, axes, dt, isDown('Space'), colliders, (impact) => {
       sfx.crash();
       if (impact > 12) damagePlayer(3);
-    }, crewSpeedMult(crewState));
+    }, crewSpeedMult(crewState), city.getWeather().wetLevel);
     speedKmh = Math.abs(playerCar.speed) * 3.6;
+    // The title before this frame's jump: the ladder moves on landing,
+    // and the game toasts the new name the moment it changes.
+    const titleBefore = stuntTitle(stuntState);
+    // Stunt ramps: the system returns one event per frame — a launch,
+    // a landing, or nothing — and the loop banks the landing.
+    const stuntEv = updateStunts(stuntState, playerCar, dt, game.time);
+    if (stuntEv && stuntEv.type === 'launched') {
+      sfx.jump();
+    } else if (stuntEv && stuntEv.type === 'landed') {
+      // The reward is twice the score, then the crew and the studio
+      // take their cut upward: Jax pays 25% more, and owning the film
+      // studio pays 25% more on top of that.
+      const reward = Math.round(stuntEv.score * 2 * crewStuntBonus(crewState) * propertyStuntMult(propertyState));
+      // A live stunt show pays a crowd tip on top: the film lot
+      // visitors throw $50 at every jump while the show is running.
+      const crowdTip = eventState.active && eventState.active.kind === 'stunt-show' ? 50 : 0;
+      player.money += reward + crowdTip;
+      stuntState.earned += reward + crowdTip;
+      setCash(player.money);
+      sfx.land();
+      if (stuntEv.isRecord) sfx.record();
+      toast('STUNT JUMP', formatAirtime(stuntEv.airSeconds) + ' of air off the ' + stuntEv.ramp.name + ' — $' + reward.toLocaleString() + '.' + (crowdTip > 0 ? ' The crowd throws in $' + crowdTip + '.' : '') + (stuntEv.combo > 1 ? ' Combo ×' + stuntEv.comboMult.toFixed(1) + ' (' + stuntEv.combo + ' chained).' : '') + (stuntEv.daily ? ' Ramp of the day — double pay!' : ''));
+      if (stuntEv.isRecord) announce(stuntRumor(stuntState));
+      // The first jump ever teaches the combo: chain the next one
+      // inside twenty seconds, or the multiplier is gone.
+      if (stuntState.jumps === 1) toast('FIRST JUMP', 'Airtime pays — and a second jump inside 20 seconds chains the combo up to ×3. The ramp of the day pays double.');
+      // A new title on the ladder: the backlot has a new name for Mara.
+      const titleNow = stuntTitle(stuntState);
+      if (titleNow !== titleBefore) {
+        toast('NEW TITLE — ' + titleNow.toUpperCase(), 'The stunt ladder moves: ' + stuntState.jumps + ' jumps, and the backlot has a new name for Mara.');
+        sfx.fanfare();
+      }
+      if (stuntSetDone(stuntState) && !stuntState.setPaid) {
+        stuntState.setPaid = true;
+        player.money += STUNT_SET_BONUS;
+        setCash(player.money);
+        toast('STUNT SET COMPLETE', 'All eight ramps cleared — $' + STUNT_SET_BONUS.toLocaleString() + ' bonus. Stunt Legend.');
+        sfx.fanfare();
+      }
+      if (stuntEv.airSeconds >= 1.1 && nearestPoliceDistance(police, player.x, player.z) < 40) {
+        addHeat(wanted, STUNT_HEAT, 'reckless stunt');
+        toast('RECKLESS DRIVING', 'The PD saw that jump — heat is rising.');
+      }
+      persist();
+    }
+    // While the car is in the air the mesh rides the parabola, and the
+    // letterbox closes in on the big air.
+    if (stuntState.air) playerCar.mesh.position.y = stuntState.airY;
+    setLetterbox(!!stuntState.air && stuntState.airY > 1.5);
+    if (playerCar.drifting && !wasDrifting) sfx.screech();
+    // Brake lights flare while the pedal is down, not after dark only.
+    updateCarLights(playerCar, city.getWeather().timeOfDay < 0.22 || city.getWeather().timeOfDay > 0.82, playerCar.braking);
+    // Rocco's crew races the jump: a duel score that pays or costs.
+    const duel = rivalStuntDuel(rivalState, stuntState, dt, game.time);
+    if (duel) {
+      if (duel.type === 'duel') toast('STUNT DUEL', 'Rocco\u2019s crew posted ' + duel.score + ' — beat it with one jump in the next two minutes.');
+      else if (duel.type === 'duel-won') {
+        player.money += STUNT_DUEL_REWARD;
+        setCash(player.money);
+        toast('DUEL WON', 'You out-jumped Rocco\u2019s crew (' + duel.landingScore + ' vs ' + duel.score + ') — $' + STUNT_DUEL_REWARD.toLocaleString() + '.');
+        sfx.fanfare();
+      } else if (duel.type === 'duel-expired') {
+        toast('DUEL LOST', 'Rocco\u2019s crew kept their ' + duel.score + ' — run it back.');
+      }
+      persist();
+    }
     setEngine(Math.abs(playerCar.speed) / playerCar.maxSpeed, true, playerCar.kind);
     const raceRoute = raceState.active ? null : raceNearStart(playerCar.x, playerCar.z);
     setHint('<b>E</b> — exit car &nbsp; <b>Space</b> — handbrake' +
@@ -1697,6 +1835,10 @@ function stepGame(dt) {
     const nearPkg = nearestPackage(packagesState, player.x, player.z);
     // The nearest blank spray wall, for the same hint line.
     const nearWall = graffitiNear(graffitiState, player.x, player.z);
+    // The nearest unjumped ramp, for the same hint line.
+    const nearRamp = nearestUnjumpedRamp(stuntState, player.x, player.z);
+    // A film-crew member close by, talking between takes.
+    const nearFilmCrew = peds.find((p) => p.variant === 'film-crew' && !p.down && dist2D(p.x, p.z, player.x, player.z) < 6);
     // The nearest named place, so the player always knows where they are.
     const nearPlace = nearestPlace(player.x, player.z);
     if (near && consumePressed('KeyE')) {
@@ -1718,12 +1860,16 @@ function stepGame(dt) {
       setHint('Gold crate nearby: ' + nearPkg.pkg.name + ' — ' + nearPkg.distance + 'm · ' + nearPkg.pkg.hint);
     } else if (nearWall) {
       setHint('<b>I</b> — spray the ' + nearWall.name + ' wall (' + (12 - graffitiWallsLeft(graffitiState)) + '/12 dry)');
+    } else if (nearRamp && nearRamp.dist < 40) {
+      setHint('Ramp nearby: the ' + nearRamp.ramp.name + ' — ' + nearRamp.dist + 'm · hit it flat out along its line');
+    } else if (nearFilmCrew) {
+      setHint('Film crew: ' + filmCrewLine());
     } else if (nearPlace && nearPlace.distance < 12) {
       setHint('Near the ' + nearPlace.place.name + ' — ' + nearPlace.distance + 'm');
     } else if (garageNear(player.x, player.z)) {
       setHint('<b>G</b> — Leo\u2019s garage · <b>J</b> — jobs board · <b>K</b> — showroom ' + collectorsState.collected.length + '/6 · <b>L</b> — packages ' + packagesState.found.length + '/10 · <b>U</b> — bounty board ' + bountyState.caught + ' caught');
     } else if (crewNear(player.x, player.z)) {
-      setHint('<b>V</b> — hire a hand for Mara\u2019s crew' + (crewState.hired.length ? ' (' + crewState.hired.length + '/3 hired)' : ''));
+      setHint('<b>V</b> — hire a hand for Mara\u2019s crew' + (crewState.hired.length ? ' (' + crewState.hired.length + '/6 hired)' : ''));
     } else if (casinoNear(player.x, player.z)) {
       setHint('<b>X</b> — Solmar Casino: slots and blackjack');
     } else if (nightclubNear(player.x, player.z)) {
@@ -1810,15 +1956,30 @@ function stepGame(dt) {
   }
 
   // --- traffic, pedestrians, police ---
-  for (const car of traffic) {
-    if (car === bus) continue; // the bus follows its own route, not the traffic AI
-    updateTrafficCar(car, dt, traffic);
-  }
-  // Headlights come on after dark, for traffic and for Mara's car.
+  // The sky decides the traffic: rain slows the cars, and the wet
+  // roads keep them slower still after the shower passes.
   const skyNow = city.getWeather();
   const isNight = skyNow.timeOfDay < 0.22 || skyNow.timeOfDay > 0.82;
+  for (const car of traffic) {
+    if (car === bus) continue; // the bus follows its own route, not the traffic AI
+    updateTrafficCar(car, dt, traffic, skyNow.mode === 'rain');
+  }
+  // Headlights come on after dark, for traffic and for Mara's car.
   for (const car of traffic) updateCarLights(car, isNight);
-  if (playerCar) updateCarLights(playerCar, isNight);
+  if (playerCar) updateCarLights(playerCar, isNight, playerCar.braking);
+  // Mara's headlight: a real beam after dark, ahead of the car and
+  // swinging with the wheel — off in daylight, off on foot.
+  const night = nightFactor(skyNow.timeOfDay);
+  if (playerCar && night > 0) {
+    headlight.position.set(playerCar.x, 2.2, playerCar.z);
+    headlightTarget.position.set(
+      playerCar.x + Math.sin(playerCar.heading) * 30, 0.4,
+      playerCar.z + Math.cos(playerCar.heading) * 30,
+    );
+    headlight.intensity = 2.6 * night;
+  } else {
+    headlight.intensity = 0;
+  }
   const threats = [];
   if (playerCar && Math.abs(playerCar.speed) > 4) {
     threats.push({ x: playerCar.x, z: playerCar.z, radius: 9 });
@@ -1836,7 +1997,7 @@ function stepGame(dt) {
       }
       continue;
     }
-    updatePedestrian(ped, dt, threats);
+    updatePedestrian(ped, dt, threats, skyNow.mode === 'rain');
   }
   // Police: field as many cars as the wanted level demands.
   const wantCount = wantedForLevel(wanted.level);
@@ -2098,7 +2259,7 @@ function stepGame(dt) {
   // The helicopter: at five stars it comes up and pins its spotlight on
   // Mara; below four it peels off. While it is on station the heat cools
   // at half speed and the bust range grows — the eye never loses her.
-  const heliOn = updateHeli(heli, dt, player.x, player.z, wanted.level, game.time, missions.index === 18, !!bountyState.active);
+  const heliOn = updateHeli(heli, dt, player.x, player.z, wanted.level, game.time, missions.index === 18, !!bountyState.active, !!stuntState.air);
   setRotor(dist2D(heli.group.position.x, heli.group.position.z, player.x, player.z), heli.active);
   // The chopper calls in reinforcements: one fresh interceptor every
   // time its call timer fires while it is on station. Sable the
@@ -2221,7 +2382,7 @@ function stepGame(dt) {
     player.money += payout;
     onMissionWithCrew(crewState);
     setCash(player.money);
-    toast('MISSION COMPLETE', finished.mission.title + ' — +$' + payout + (rookBonus ? ' (Rook negotiated +15%)' : '') + ' · ' + arc.name);
+    toast('MISSION COMPLETE', finished.mission.title + ' — +$' + payout + (rookBonus ? ' (Rook negotiated +15%)' : '') + ' · ' + arc.name + (finished.mission.flavor ? ' ' + finished.mission.flavor : ''));
     sfx.mission();
     sfx.cash();
     persist();
@@ -2230,7 +2391,7 @@ function stepGame(dt) {
       game.state = 'paused';
     } else {
       const next = currentMission(missions);
-      if (next) setTimeout(() => toast(next.title, next.briefing), 2800);
+      if (next) setTimeout(() => { showTitleCard(next.title, next.briefing, next.reward); sfx.sting(); }, 1200);
     }
   }
 
@@ -2395,7 +2556,7 @@ function stepGame(dt) {
 
   // --- camera ---
   if (game.cameraMode === 'chase' && playerCar) {
-    updateCamera(camera, playerCar.x, playerCar.z, playerCar.heading, dt, camDistance, 4.6, 10);
+    updateCamera(camera, playerCar.x, playerCar.z, playerCar.heading, dt, camDistance, 4.6, 10, speedKmh);
   } else if (game.cameraMode === 'chase' && playerBoat) {
     updateCamera(camera, playerBoat.x, playerBoat.z, playerBoat.heading, dt, camDistance + 4, 5.5, 12);
   } else {
@@ -2408,11 +2569,11 @@ function stepGame(dt) {
   setHealth(player.health, player.maxHealth);
   setStamina(player.stamina, player.maxStamina);
   const sky = city.getWeather();
-  setClock(formatClock(sky.timeOfDay * 24), sky.mode === 'rain' ? 'RAIN' : 'CLEAR');
+  setClock(formatClock(sky.timeOfDay * 24), sky.mode === 'rain' ? 'RAIN' : sky.wetLevel > 0.35 ? 'WET ROADS' : 'CLEAR');
   setTimer(missions.stageTimer);
   if (jobsState.active && jobsState.active.timer != null) setTimer(jobsState.active.timer);
   setRadio(radioStatusLine(radioState));
-  setCrewLine(crewStatusLine(crewState) + (nightclubStatusLine(nightclubState) ? ' · ' + nightclubStatusLine(nightclubState) : '') + (fastTravelStatusLine(fastTravelState) ? ' · ' + fastTravelStatusLine(fastTravelState) : '') + (collectorsStatusLine(collectorsState) ? ' · ' + collectorsStatusLine(collectorsState) : '') + (jobsStatusLine(jobsState) ? ' · ' + jobsStatusLine(jobsState) : '') + (bountyStatusLine(bountyState) ? ' · ' + bountyStatusLine(bountyState) : '') + (graffitiStatusLine(graffitiState) ? ' · ' + graffitiStatusLine(graffitiState) : ''));
+  setCrewLine(crewStatusLine(crewState) + (nightclubStatusLine(nightclubState) ? ' · ' + nightclubStatusLine(nightclubState) : '') + (fastTravelStatusLine(fastTravelState) ? ' · ' + fastTravelStatusLine(fastTravelState) : '') + (collectorsStatusLine(collectorsState) ? ' · ' + collectorsStatusLine(collectorsState) : '') + (jobsStatusLine(jobsState) ? ' · ' + jobsStatusLine(jobsState) : '') + (bountyStatusLine(bountyState) ? ' · ' + bountyStatusLine(bountyState) : '') + (graffitiStatusLine(graffitiState) ? ' · ' + graffitiStatusLine(graffitiState) : '') + (stuntStatusLine(stuntState) ? ' · ' + stuntStatusLine(stuntState) : '') + (stuntComboLine(stuntState, game.time) ? ' · ' + stuntComboLine(stuntState, game.time) : ''));
   // Club Neon: a live DJ set runs on the beat while Mara is on foot.
   // Space on the pulse scores; the set pays out by the crowd when the
   // sixteenth beat lands. The club sign burns bright once she owns it.
@@ -2444,14 +2605,14 @@ function stepGame(dt) {
   } else if (!currentMission(missions)) {
     // Free roam: the objective line carries the taxi company, the race
     // standings and the property book, so the side business is always
-    // in view.
-    setObjective('FREE ROAM', taxiStatusLine(taxiCompany) + ' · ' + raceStatusLine(raceState) + ' · ' + propertyStatusLine(propertyState));
+    // in view — and the ramps, so the next jump is always in view too.
+    setObjective('FREE ROAM', taxiStatusLine(taxiCompany) + ' · ' + raceStatusLine(raceState) + ' · ' + propertyStatusLine(propertyState) + ' · ' + stuntState.jumped.length + '/8 ramps');
   } else {
     setObjective(obj.title, obj.text);
   }
   // The race line sits under the clock while a race is live.
   setRaceLine(nightclubState.set ? djSetLine(nightclubState) : raceObjective(raceState));
-  setSpeed(speedKmh, playerBoat ? (playerBoat.name || 'BOAT') : playerCar ? (playerCar.name || 'CAR') : 'ON FOOT');
+  setSpeed(speedKmh, playerBoat ? (playerBoat.name || 'BOAT') : playerCar ? (stuntState.air ? 'AIRBORNE · ' + formatAirtime(stuntState.air.t) : (playerCar.name || 'CAR')) : 'ON FOOT');
   const stage = currentStage(missions);
   const marker = stage && stage.place ? stage.place
     : missions.fare ? { x: missions.fare.pickedUp ? missions.fare.toX : missions.fare.fromX, z: missions.fare.pickedUp ? missions.fare.toZ : missions.fare.fromZ }
@@ -2460,6 +2621,7 @@ function stepGame(dt) {
     px: player.x, pz: player.z, heading: playerCar ? playerCar.heading : playerBoat ? playerBoat.heading : player.heading,
     marker, traffic, police, roadblocks, time: game.time, boat: playerBoat,
     lookout: crewLookout(crewState),
+    stuntRamps: STUNT_RAMPS.map((r) => ({ x: r.x, z: r.z })),
   });
 
   // --- autosave ---
@@ -2543,6 +2705,7 @@ window.__solmar = {
   get packagesState() { return packagesState; },
   get bountyState() { return bountyState; },
   get graffitiState() { return graffitiState; },
+  get stuntState() { return stuntState; },
   get showroomSign() { return showroomSign; },
   get bountyBoard() { return bountyBoard; },
   get bus() { return bus; },

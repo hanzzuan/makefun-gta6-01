@@ -128,6 +128,17 @@ export const FUGITIVES = [
     blurb: 'Forty years she ran the plaza. The PD pays for a ghost with her name on it.',
     taunts: ['Forty years I ran this plaza, child.', 'The Lord forgives. I do not.'],
   },
+  {
+    id: 'airtime',
+    name: 'Sal \u201cAirtime\u201d Vega',
+    alias: 'Airtime',
+    tier: 2,
+    bounty: 9000,
+    variant: 'fugitive',
+    hideout: 'film-lot',
+    blurb: 'The stunt driver who jumped the harbor bridge and never landed — legally. The film lot hides him now.',
+    taunts: ['I jumped the harbor bridge, Voss. You cannot catch air.', 'The cameras love me. The PD does not.'],
+  },
 ];
 
 // The rival hunter: Vex works the same board, and the clock on every

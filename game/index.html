@@ -5,7 +5,8 @@
 <meta name="theme-color" content="#0b0b14">
 <noscript><p style="color:#fff;background:#0b0b14;padding:24px;font-family:sans-serif">SOLMAR — Sunset Streets needs JavaScript to run. Please enable it and reload.</p></noscript>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="SOLMAR — Sunset Streets: an original open-world crime game. Forty story missions, driving, boats, a wanted level, a nightclub to own, a taxi rank that takes you anywhere in town, six rare cars to collect, a jobs board, twelve spray walls to paint, and a bounty board with ten fugitives to hunt.">
+<meta name="description" content="SOLMAR — Sunset Streets: an original open-world crime game. Forty-four story missions, driving, boats, a wanted level, a nightclub to own, a taxi rank that takes you anywhere in town, six rare cars to collect, a jobs board, twelve spray walls to paint, eight stunt ramps to jump, and a bounty board with eleven fugitives to hunt.">
+<meta name="keywords" content="SOLMAR, Sunset Streets, open-world, crime game, stunt jumps, film lot, Reel FM, three.js">
 <link rel="icon" href="data:,">
 <title>SOLMAR — Sunset Streets</title>
 <style>
@@ -66,6 +67,23 @@
     font-size: 30px; font-weight: 900; letter-spacing: 1px; color: #ffd23e;
     opacity: 0; transition: opacity .3s; text-align: center; }
   #toast small { display: block; font-size: 16px; color: #fff; font-weight: 400; letter-spacing: 0; }
+  /* The mission title card: a big cinematic card that fades in when a
+     story mission starts, holds for a few seconds, and fades out. */
+  #titlecard { position: absolute; left: 50%; top: 34%; transform: translateX(-50%);
+    text-align: center; opacity: 0; transition: opacity .5s; pointer-events: none; }
+  #titlecard.show { opacity: 1; }
+  #titlecard .t { font-size: 42px; font-weight: 900; letter-spacing: 4px; color: #ffd23e;
+    text-shadow: 0 3px 0 #c2432b, 0 6px 18px rgba(0,0,0,.7); }
+  #titlecard .s { font-size: 17px; color: #fff; margin-top: 6px; line-height: 1.4;
+    text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+  #titlecard .r { font-size: 15px; color: #7dff8a; font-weight: 800; margin-top: 6px; letter-spacing: 2px; }
+  /* The letterbox: two black bars that close in on big stunt air, so a
+     jump reads like a shot from a film. */
+  #lb-top, #lb-bottom { position: fixed; left: 0; right: 0; height: 0; background: #000;
+    z-index: 5; transition: height .45s ease; pointer-events: none; }
+  #lb-top { top: 0; }
+  #lb-bottom { bottom: 0; }
+  body.letterbox #lb-top, body.letterbox #lb-bottom { height: 7vh; }
   #overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
     background: radial-gradient(ellipse at center, rgba(20,16,60,.55), rgba(5,4,20,.92));
     color: #fff; z-index: 10; }
@@ -116,6 +134,9 @@
   <div id="hint"></div>
   <div id="crosshair"></div>
   <div id="toast"></div>
+  <div id="titlecard"></div>
+  <div id="lb-top"></div>
+  <div id="lb-bottom"></div>
 </div>
 <div id="overlay"></div>
 <p id="status" role="status" aria-live="polite"></p>

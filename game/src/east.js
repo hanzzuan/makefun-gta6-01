@@ -394,6 +394,7 @@ export function buildEast(scene, colliders) {
   }
   // The scoreboard: a big dark panel over the north stand with a glowing
   // face that pulses through the match. SOLMAR 3 — 1 VISITORS, always.
+  // On Saturdays it reads STUNT SHOW SAT — the bowl fills for the jumps.
   const board = new THREE.Mesh(
     new THREE.BoxGeometry(18, 7, 1.4),
     new THREE.MeshStandardMaterial({ color: 0x14141a, roughness: 0.6 }),
@@ -515,9 +516,12 @@ export function buildEast(scene, colliders) {
     colliders,
     update(dt, time, isNight) {
       // The scoreboard pulses through the match; the floodlights and
-      // the mall sign only earn their keep after dark.
+      // the mall sign only earn their keep after dark. On Saturdays
+      // the bowl fills for the stunt show, and the board glows orange
+      // for the jumps instead of gold for the match.
       const pulse = 0.75 + Math.sin(time * 1.4) * 0.25;
-      boardFaceMat.color.setHex(isNight ? 0xffe9a8 : 0x8a7a55);
+      const stuntSaturday = new Date().getDay() === 6;
+      boardFaceMat.color.setHex(isNight ? (stuntSaturday ? 0xff7a1a : 0xffe9a8) : 0x8a7a55);
       boardFace.scale.setScalar(isNight ? pulse : 1);
       for (const head of floodHeads) {
         head.material.color.setHex(isNight ? 0xfff2c0 : 0x9a8a68);

@@ -8,6 +8,7 @@
 // factory (cars.js owns the meshes); this module owns the routes and
 // the spawns.
 
+import * as THREE from 'three';
 import { makeCar } from './cars.js';
 import { clamp } from './util.js';
 
@@ -106,6 +107,45 @@ export function spawnSprayVan(scene, x, z) {
   van.targetSpeed = 0;
   scene.add(van.mesh);
   return van;
+}
+
+// The film lot's camera van: a black van with a camera crane on the
+// roof, parked by the backlot set — the stunt crew's rolling office.
+export function spawnFilmVan(scene, x, z) {
+  const van = makeCar('van', x, z, Math.random() * Math.PI * 2, 0x14141a);
+  van.targetSpeed = 0;
+  scene.add(van.mesh);
+  const crane = new THREE.Mesh(
+    new THREE.BoxGeometry(0.25, 0.25, 3.2),
+    new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.5, metalness: 0.6 }),
+  );
+  crane.position.set(0, 2.6, 0.4);
+  crane.rotation.x = 0.4;
+  van.mesh.add(crane);
+  return van;
+}
+
+// A camera car parked at the film lot: a black coupe with a camera
+// rig on the roof, so the chase shots have a car to shoot from. It
+// is stealable, like every car in Solmar — the film crew will miss it.
+export function spawnCameraCar(scene, x, z) {
+  const car = makeCar('coupe', x, z, Math.random() * Math.PI * 2, 0x14141a);
+  car.targetSpeed = 0;
+  scene.add(car.mesh);
+  const rig = new THREE.Mesh(
+    new THREE.BoxGeometry(0.8, 0.5, 1.0),
+    new THREE.MeshStandardMaterial({ color: 0x1a1a1e, roughness: 0.4 }),
+  );
+  rig.position.set(0, 1.9, 0.3);
+  car.mesh.add(rig);
+  const lens = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.22, 0.22, 0.5, 10),
+    new THREE.MeshStandardMaterial({ color: 0x0a0a0e, roughness: 0.2, metalness: 0.6 }),
+  );
+  lens.rotation.x = Math.PI / 2;
+  lens.position.set(0, 1.9, 1.1);
+  car.mesh.add(lens);
+  return car;
 }
 
 // A yellow cab parked at the kerb: stealable, like every cab in

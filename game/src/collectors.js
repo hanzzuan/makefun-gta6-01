@@ -230,6 +230,12 @@ export function rareCarRumor(state) {
   const missing = RARE_CARS.filter((c) => !state.collected.includes(c.id));
   if (missing.length === 0) return 'Every rare car is in the showroom. The hunt is done — the Mural Row walls are next.';
   const car = missing[Math.floor(Math.random() * missing.length)];
+  // Once in five, the word is from the film lot: the stunt crew parks
+  // its vans by the ramps, and the rares roll past on the beach road.
+  if (Math.random() < 0.2) return 'Word is the ' + car.name + ' was seen near the film lot ramps — the stunt crew parks there.';
+  // Once in eight, the word is from the stunt show: the crowd saw the
+  // rare roll past the lot while the ramps were out.
+  if (Math.random() < 0.125) return 'Word is the ' + car.name + ' was seen at the film lot stunt show — the crowd watched it roll past the ramps.';
   return 'Word is the ' + car.name + ' was seen near ' + rareCarArea(car) + '.';
 }
 
